@@ -47,8 +47,6 @@ function getOrCreateConversationId(rubro, slug) {
 
 function applyTheme(negocio) {
   document.title = negocio.nombre
-  document.documentElement.style.setProperty('--color-primary', negocio.color_primario)
-  document.documentElement.style.setProperty('--color-primary-dark', negocio.color_dark)
 
   const themeMeta = document.getElementById('theme-color-meta')
   if (themeMeta) themeMeta.setAttribute('content', negocio.color_primario)
