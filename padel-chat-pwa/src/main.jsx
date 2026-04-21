@@ -1,6 +1,8 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import ChatApp from './ChatApp.jsx'
+import HomeScreen from './HomeScreen.jsx'
 import './ChatApp.css'
 
 if ('serviceWorker' in navigator) {
@@ -14,6 +16,11 @@ if ('serviceWorker' in navigator) {
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <ChatApp />
+    <BrowserRouter>
+      <Routes>
+        <Route path="/:rubro/:slug" element={<ChatApp />} />
+        <Route path="*" element={<HomeScreen />} />
+      </Routes>
+    </BrowserRouter>
   </React.StrictMode>
 )
