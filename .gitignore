@@ -1,0 +1,6 @@
+.worktrees/
+padel-chat-pwa/node_modules/
+padel-chat-pwa/dist/
+padel-chat-pwa/.env.local
+padel-chat-pwa/.env.*.local
+.superpowers/

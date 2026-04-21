@@ -1,0 +1,26 @@
+{
+  "name": "Padel Centro",
+  "short_name": "Pádel Centro",
+  "description": "Centro de la ciudad",
+  "start_url": "/?complex_id=centro",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#45B7D1",
+  "theme_color": "#45B7D1",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "/favicons/favicon_centro_192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicons/favicon_centro_512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

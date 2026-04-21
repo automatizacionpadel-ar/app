@@ -1,0 +1,566 @@
+{
+  "name": "05b - Agendar cita con opciones pago - subWF",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "nombre"
+            },
+            {
+              "name": "apellido"
+            },
+            {
+              "name": "celular"
+            },
+            {
+              "name": "fecha"
+            },
+            {
+              "name": "hora"
+            },
+            {
+              "name": "cancha"
+            },
+            {
+              "name": "chat_id"
+            },
+            {
+              "name": "client_id"
+            },
+            {
+              "name": "monto"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1968,
+        -352
+      ],
+      "id": "753dd69f-7510-47c0-9ac6-4fb68e40ba01",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputData = $input.item.json;\nconst fechaRaw = inputData.fecha.replace(/\\//g, '-');\nconst horaRaw = inputData.hora;\nconst partes = fechaRaw.split('-').map(Number);\nlet d, m, y;\nif (partes[0] > 1000) { [y, m, d] = partes; }\nelse if (partes[2] > 1000) { [d, m, y] = partes; }\nelse { [d, m, y] = partes; y += 2000; }\nconst horaPartes = horaRaw.toString().replace(':','.').split('.');\nconst horas = parseInt(horaPartes[0]);\nconst minutos = parseInt(horaPartes[1] || '0');\nconst fechaObj = new Date(y, m-1, d, horas, minutos, 0);\nconst fechaFin = new Date(fechaObj.getTime() + 90*60000);\nconst toISO = (date) => {\n  const pad = n => String(n).padStart(2,'0');\n  return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:00-03:00`;\n};\nconst fechaFormateada = `${String(d).padStart(2,'0')}/${String(m).padStart(2,'0')}/${y}`;\nconst horaFormateada = `${String(horas).padStart(2,'0')}:${String(minutos).padStart(2,'0')}`;\nreturn { ...inputData, fecha_hora_iso_start: toISO(fechaObj), fecha_hora_iso_end: toISO(fechaFin), fecha_formateada: fechaFormateada, hora_formateada: horaFormateada };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1744,
+        -352
+      ],
+      "id": "d480e642-d737-4be4-9d05-2d1a89907802",
+      "name": "Convertir fecha"
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "b535115af732095304cb08c1025b309323f101e30d6cb8e5c95b15d8883a48b8@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "Reservaciones"
+        },
+        "start": "={{ $json.fecha_hora_iso_start }}",
+        "end": "={{ $json.fecha_hora_iso_end }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        -1520,
+        -352
+      ],
+      "id": "92e918d0-5ba6-4983-9038-116840333f6f",
+      "name": "Get many events",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "3g1sScD5fKOeQIFK",
+          "name": "Google Calendar"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const itemsCalendario = $input.all();\nconst eventos = (itemsCalendario.length > 0 && itemsCalendario[0].json.id) ? itemsCalendario.map(i => i.json) : [];\nconst datosReserva = $node['When Executed by Another Workflow'].json;\nconst eventosPorCancha = {};\nconst hasTorneo = {};\nfor (const ev of eventos) {\n  const match = (ev.summary || '').match(/N°(\\d+)/);\n  if (match) {\n    const c = match[1];\n    eventosPorCancha[c] = true;\n    if ((ev.summary || '').toLowerCase().includes('torneo')) hasTorneo[c] = true;\n  }\n}\nconst todas = ['1','2','3','4'];\nconst ocupadas = Object.keys(eventosPorCancha);\nconst disponibles = todas.filter(c => !ocupadas.includes(c));\nconst canchaSolicitada = String(datosReserva.cancha);\nconst canchaSolicitadaLibre = !ocupadas.includes(canchaSolicitada);\nreturn { ...datosReserva, fecha_hora_iso_start: $node['Convertir fecha'].json.fecha_hora_iso_start, fecha_hora_iso_end: $node['Convertir fecha'].json.fecha_hora_iso_end, fecha_formateada: $node['Convertir fecha'].json.fecha_formateada, hora_formateada: $node['Convertir fecha'].json.hora_formateada, canchas_disponibles: disponibles, cancha_solicitada: canchaSolicitada, cancha_solicitada_libre: canchaSolicitadaLibre, cancha_final: canchaSolicitadaLibre ? canchaSolicitada : (disponibles[0] || null), mensaje_estado: canchaSolicitadaLibre ? 'OK' : 'OCUPADA', motivo_bloqueo: hasTorneo[canchaSolicitada] ? 'torneo' : null, hay_torneo_activo: Object.keys(hasTorneo).length > 0, canchas_en_torneo: Object.keys(hasTorneo) };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1296,
+        -352
+      ],
+      "id": "d55839a2-d8a5-499c-9274-2ccbd0560fd9",
+      "name": "Canchas disponibles"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-cancha-libre",
+              "leftValue": "={{ $json.mensaje_estado }}",
+              "rightValue": "OK",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1104,
+        -352
+      ],
+      "id": "8c67ebd6-1326-413b-80f3-b4ea0b77cf56",
+      "name": "Cancha libre"
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "b535115af732095304cb08c1025b309323f101e30d6cb8e5c95b15d8883a48b8@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "Reservaciones"
+        },
+        "start": "={{ $('Canchas disponibles').item.json.fecha_hora_iso_start }}",
+        "end": "={{ $('Canchas disponibles').item.json.fecha_hora_iso_end }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        -880,
+        -224
+      ],
+      "id": "acc8b76b-de06-4eea-8425-5e50c6e01f32",
+      "name": "Agendar alternativa",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "3g1sScD5fKOeQIFK",
+          "name": "Google Calendar"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const datosReserva = $node['Canchas disponibles'].json;\nconst disponibles = datosReserva.canchas_disponibles;\nconst hayDisponibilidadAhora = disponibles.length > 0;\nreturn {\n  status: 'cancha_ocupada',\n  cancha_solicitada: datosReserva.cancha_solicitada,\n  canchas_disponibles: disponibles,\n  hay_otras_canchas: hayDisponibilidadAhora,\n  canchas_libres_proximas: disponibles,\n  mensaje_para_agente: hayDisponibilidadAhora\n    ? `La cancha ${datosReserva.cancha_solicitada} está ocupada. Canchas disponibles: ${disponibles.join(', ')}. Consultá al cliente si quiere alguna de estas.`\n    : `La cancha ${datosReserva.cancha_solicitada} está ocupada y no hay otras canchas disponibles para ese horario.`\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -672,
+        -224
+      ],
+      "id": "77036146-61c5-4015-bc68-2a0318dbc32a",
+      "name": "Sugerir alternativa"
+    },
+    {
+      "parameters": {
+        "jsCode": "return {\n  status: 'cancha_ocupada',\n  error: 'La cancha solicitada ya tiene una reserva en ese horario.',\n  opciones_disponibles: {\n    canchas_libres: $node['Sugerir alternativa'].json.canchas_libres_proximas,\n    mensaje_sugerido: $input.first().json.mensaje_para_agente\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -480,
+        -224
+      ],
+      "id": "f020f2e0-849c-4fed-9acb-4e687bfa145a",
+      "name": "Caso negativo"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "databaseId": 147,
+        "tableId": 560,
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": 4865,
+              "fieldValue": "={{ $('Convertir fecha').item.json.fecha_formateada }}"
+            },
+            {
+              "fieldId": 7898,
+              "fieldValue": "={{ $('Convertir fecha').item.json.hora_formateada }}"
+            },
+            {
+              "fieldId": 6863,
+              "fieldValue": "={{ $('Cancha libre').item.json.cancha_final }}"
+            },
+            {
+              "fieldId": 7135,
+              "fieldValue": "Pendiente"
+            },
+            {
+              "fieldId": 7189,
+              "fieldValue": "={{ $('Cancha libre').item.json.monto }}"
+            },
+            {
+              "fieldId": 7903,
+              "fieldValue": "={{ [ parseInt($('When Executed by Another Workflow').item.json.client_id) ] }}"
+            },
+            {
+              "fieldId": 7913,
+              "fieldValue": "={{ String($('When Executed by Another Workflow').item.json.chat_id) + '_' + String($('Cancha libre').item.json.cancha_final) + '_' + String($('Convertir fecha').item.json.fecha_hora_iso_start) }}"
+            },
+            {
+              "fieldId": 7914,
+              "fieldValue": "={{ String($('When Executed by Another Workflow').item.json.chat_id) }}"
+            },
+            {
+              "fieldId": 7915,
+              "fieldValue": "={{ $('Convertir fecha').item.json.fecha_hora_iso_start }}"
+            },
+            {
+              "fieldId": 7916,
+              "fieldValue": "={{ $('Convertir fecha').item.json.fecha_hora_iso_end }}"
+            },
+            {
+              "fieldId": 7330,
+              "fieldValue": "={{ $('Get many events').item.json.id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.baserow",
+      "typeVersion": 1,
+      "position": [
+        -864,
+        -448
+      ],
+      "id": "270910b5-f63f-40a5-a4b5-6ba36dc5fdf2",
+      "name": "Guardar reserva pre-pago",
+      "disabled": true,
+      "credentials": {
+        "baserowApi": {
+          "id": "bpxjYqewrr1K3dsf",
+          "name": "Baserow"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "databaseId": 147,
+        "tableId": 560,
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": 4865,
+              "fieldValue": "={{ $('Convertir fecha').item.json.fecha_formateada }}"
+            },
+            {
+              "fieldId": 7898,
+              "fieldValue": "={{ $('Convertir fecha').item.json.hora_formateada }}"
+            },
+            {
+              "fieldId": 6863,
+              "fieldValue": "={{ $('Cancha libre').item.json.cancha_final }}"
+            },
+            {
+              "fieldId": 7135,
+              "fieldValue": "Pendiente"
+            },
+            {
+              "fieldId": 7189,
+              "fieldValue": "={{ $('Cancha libre').item.json.monto }}"
+            },
+            {
+              "fieldId": 7903,
+              "fieldValue": "={{ [ parseInt($('When Executed by Another Workflow').item.json.client_id) ] }}"
+            },
+            {
+              "fieldId": 7913,
+              "fieldValue": "={{ String($('When Executed by Another Workflow').item.json.chat_id) + '_' + String($('Cancha libre').item.json.cancha_final) + '_' + String($('Convertir fecha').item.json.fecha_hora_iso_start) }}"
+            },
+            {
+              "fieldId": 7914,
+              "fieldValue": "={{ String($('When Executed by Another Workflow').item.json.chat_id) }}"
+            },
+            {
+              "fieldId": 7915,
+              "fieldValue": "={{ $('Convertir fecha').item.json.fecha_hora_iso_start }}"
+            },
+            {
+              "fieldId": 7916,
+              "fieldValue": "={{ $('Convertir fecha').item.json.fecha_hora_iso_end }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.baserow",
+      "typeVersion": 1,
+      "position": [
+        -864,
+        -368
+      ],
+      "id": "270910b5-f63f-40a5-a4b5-000000000001",
+      "name": "Guardar reserva pre-pago v2",
+      "credentials": {
+        "baserowApi": {
+          "id": "bpxjYqewrr1K3dsf",
+          "name": "Baserow"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('When Executed by Another Workflow').item.json.chat_id }}",
+        "text": "=⏳ <b>Reserva lista para confirmar</b>\n\n📅 <b>Fecha:</b> {{ $('Convertir fecha').item.json.fecha_formateada }}\n🕒 <b>Hora:</b> {{ $('Convertir fecha').item.json.hora_formateada }}hs\n🎾 <b>Cancha N°:</b> {{ $('Cancha libre').item.json.cancha_final }}\n💰 <b>Seña:</b> ${{ $('Cancha libre').item.json.monto }}\n\n¿Cómo querés pagar la seña?",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Link de Pago",
+                    "additionalFields": {
+                      "url": "={{ $json.init_point }}"
+                    }
+                  },
+                  {
+                    "text": "Transferencia",
+                    "additionalFields": {
+                      "callback_data": "=metodo_transferencia"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -512,
+        -448
+      ],
+      "id": "83791ae7-66b7-4f9e-be41-f4eabf82292b",
+      "name": "Enviar botones de pago",
+      "webhookId": "a618ade0-6733-444d-97f3-1d8587761fd6",
+      "credentials": {
+        "telegramApi": {
+          "id": "IlRajKak34OGYyo8",
+          "name": "Telegram"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return {\n  status: 'esperando_metodo_pago',\n  cancha: $('Cancha libre').item.json.cancha_final,\n  fecha: $('Convertir fecha').item.json.fecha_formateada,\n  hora: $('Convertir fecha').item.json.hora_formateada,\n  monto: $('Cancha libre').item.json.monto,\n  baserow_row_id: $('Guardar reserva pre-pago').item.json.id,\n  chat_id: $('When Executed by Another Workflow').item.json.chat_id,\n  fecha_hora_iso_start: $('Convertir fecha').item.json.fecha_hora_iso_start,\n  fecha_hora_iso_end: $('Convertir fecha').item.json.fecha_hora_iso_end,\n  nombre: $('When Executed by Another Workflow').item.json.nombre,\n  apellido: $('When Executed by Another Workflow').item.json.apellido,\n  celular: $('When Executed by Another Workflow').item.json.celular,\n  client_id: $('When Executed by Another Workflow').item.json.client_id\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -320,
+        -448
+      ],
+      "id": "5de3e62f-8b5c-41ad-9a83-00504bc5d12f",
+      "name": "Caso esperando método pago"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.mercadopago.com/checkout/preferences",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"items\": [\n    {\n      \"id\": \"Reserva de cancha\",\n      \"title\": \"{{ 'Seña - Cancha N°' + $('Cancha libre').item.json.cancha_final + ' - ' + $('Convertir fecha').item.json.fecha_formateada + ' ' + $('Convertir fecha').item.json.hora_formateada }}\",\n      \"quantity\": 1,\n      \"currency_id\": \"ARS\",\n      \"unit_price\": {{ Number($('Cancha libre').item.json.monto) }}\n    }\n  ],\n  \"payer\": {\n    \"name\": \"{{ $('When Executed by Another Workflow').item.json.nombre }}\",\n    \"surname\": \"{{ $('When Executed by Another Workflow').item.json.apellido }}\",\n    \"phone\": {\n      \"number\": \"{{ String($('When Executed by Another Workflow').item.json.celular) }}\"\n    }\n  },\n  \"back_urls\": {\n    \"success\": \"https://n8n.simplificia.com.ar/webhook/mp-confirmacion\",\n    \"failure\": \"https://n8n.simplificia.com.ar/webhook/mp-confirmacion\",\n    \"pending\": \"https://n8n.simplificia.com.ar/webhook/mp-confirmacion\"\n  },\n  \"external_reference\": \"{{ String($('When Executed by Another Workflow').item.json.chat_id) + '_' + String($('Cancha libre').item.json.cancha_final) + '_' + String($('Convertir fecha').item.json.fecha_hora_iso_start) }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -688,
+        -448
+      ],
+      "id": "6d4721f3-ceed-483b-b70c-f6e2aa5e2326",
+      "name": "Generar link MP1",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "gyyIs8NCKrWwMvDG",
+          "name": "MercadoPago"
+        },
+        "httpBearerAuth": {
+          "id": "XQIv9rwLJIxyRxtp",
+          "name": "MercadoPago-Bearer"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "When Executed by Another Workflow": [
+      {
+        "json": {
+          "nombre": null,
+          "apellido": null,
+          "celular": null,
+          "fecha": null,
+          "hora": null,
+          "cancha": null,
+          "chat_id": null,
+          "client_id": null,
+          "monto": null,
+          "iCalUID": null
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Convertir fecha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convertir fecha": {
+      "main": [
+        [
+          {
+            "node": "Get many events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many events": {
+      "main": [
+        [
+          {
+            "node": "Canchas disponibles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Canchas disponibles": {
+      "main": [
+        [
+          {
+            "node": "Cancha libre",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cancha libre": {
+      "main": [
+        [
+          {
+            "node": "Guardar reserva pre-pago v2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Agendar alternativa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar reserva pre-pago v2": {
+      "main": [
+        [
+          {
+            "node": "Generar link MP1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar botones de pago": {
+      "main": [
+        [
+          {
+            "node": "Caso esperando método pago",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agendar alternativa": {
+      "main": [
+        [
+          {
+            "node": "Sugerir alternativa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sugerir alternativa": {
+      "main": [
+        [
+          {
+            "node": "Caso negativo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generar link MP1": {
+      "main": [
+        [
+          {
+            "node": "Enviar botones de pago",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "93a84c84-5496-4515-beae-cc54641eed18",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e663904003f2676a92c20d36a5b372551af6e923584acdd42e8d70f0a89c4c5c"
+  },
+  "id": "tOY4czRnNRKnXiYY",
+  "tags": []
+}

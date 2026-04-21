@@ -1,0 +1,26 @@
+{
+  "name": "Padel Zona Norte",
+  "short_name": "Zona Norte",
+  "description": "Reserva tus canches en Padel Zona Norte",
+  "start_url": "/?complex_id=zona_norte",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FF6B6B",
+  "theme_color": "#FF6B6B",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "/favicons/favicon_zona_norte_192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicons/favicon_zona_norte_512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

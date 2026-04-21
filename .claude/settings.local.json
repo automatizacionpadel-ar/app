@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sshpass -p '6yO\\(5/BIWeV;JHCI19,2' ssh -o StrictHostKeyChecking=no root@76.13.127.2 \"docker ps -a --filter name=evolution-api --format 'table {{.Names}}\\\\t{{.Status}}\\\\t{{.Ports}}'\")",
+      "Bash(expect -c ' *)",
+      "Bash(expect)",
+      "Bash(openssl rand *)",
+      "Bash(node create-icons.mjs)",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(curl -s http://localhost:5173/?complex_id=zona_norte)",
+      "Bash(curl -s \"http://localhost:5173/\")",
+      "Bash(curl -s \"http://localhost:5173/manifests/manifest_zona_norte.json\")",
+      "Bash(curl -s \"http://localhost:5173/manifests/manifest_zona_sur.json\")",
+      "Bash(python3 -m json.tool)",
+      "Bash(ipconfig getifaddr *)",
+      "Bash(curl -s \"http://localhost:5173/src/components/ChatInput.jsx\")",
+      "Bash(npx vite *)",
+      "Skill(update-config)",
+      "Bash(curl *)",
+      "Bash(npx n8n-mcp *)",
+      "Bash(npm list *)",
+      "Bash(npx -y n8n-mcp@latest --version)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(d.get\\('version','?'\\)\\)\")",
+      "mcp__n8n-mcp__tools_documentation",
+      "Bash(npx n8n-mcp@latest)",
+      "Bash(npm show *)",
+      "Bash(N8N_API_URL=\"https://n8n.simplificia.com.ar\" N8N_API_KEY=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjODJmY2JhZC00NDY1LTQxMDktOTEyMi1kZGU5OTcwMjA2YTUiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiZjgyNDg3ZGMtOGJiMS00MmY2LThiNTAtNzE5ODgzYjgyMmViIiwiaWF0IjoxNzc0MTI4NjI2fQ.rEBuC6SJOsAoJh7FwuKAXYLArolLRaiAP7GrVThOTGc\" MCP_MODE=stdio LOG_LEVEL=error DISABLE_CONSOLE_OUTPUT=true n8n-mcp)",
+      "Bash(python3 -c ' *)",
+      "Bash(python3 *)",
+      "mcp__n8n-mcp__validate_node",
+      "Bash(/Users/gus/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.7/skills/brainstorming/scripts/start-server.sh *)",
+      "Bash(git init *)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "disabledMcpjsonServers": []
+}
