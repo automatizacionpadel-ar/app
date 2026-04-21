@@ -1,33 +1,25 @@
 import React, { useState } from 'react'
 
-export default function ChatHeader({ complex, onClearHistory }) {
+export default function ChatHeader({ negocio, onClearHistory }) {
   const [showConfirm, setShowConfirm] = useState(false)
-
-  function handleClearClick() {
-    setShowConfirm(true)
-  }
-
-  function handleConfirm() {
-    onClearHistory()
-    setShowConfirm(false)
-  }
 
   return (
     <>
       <header className="chat-header" role="banner">
         <div className="chat-header__left">
-          <span className="chat-header__logo" aria-hidden="true">{complex.logo}</span>
+          <span className="chat-header__logo" aria-hidden="true">{negocio.logo_emoji}</span>
           <div className="chat-header__info">
-            <div className="chat-header__name">{complex.nombre}</div>
-            <div className="chat-header__desc">{complex.horarios} · {complex.descripcion}</div>
+            <div className="chat-header__name">{negocio.nombre}</div>
+            <div className="chat-header__status">● En línea</div>
           </div>
         </div>
         <div className="chat-header__actions">
           <button
             className="btn-icon"
-            onClick={handleClearClick}
+            onClick={() => setShowConfirm(true)}
             aria-label="Limpiar historial"
             title="Limpiar historial"
+            type="button"
           >
             🗑️
           </button>
@@ -37,9 +29,9 @@ export default function ChatHeader({ complex, onClearHistory }) {
       {showConfirm && (
         <ConfirmDialog
           message="¿Borrar todo el historial de esta conversación?"
-          onConfirm={handleConfirm}
+          onConfirm={() => { onClearHistory(); setShowConfirm(false) }}
           onCancel={() => setShowConfirm(false)}
-          color={complex.color}
+          color={negocio.color_primario}
         />
       )}
     </>
@@ -52,13 +44,14 @@ function ConfirmDialog({ message, onConfirm, onCancel, color }) {
       <div className="confirm-box">
         <p className="confirm-message">{message}</p>
         <div className="confirm-actions">
-          <button className="confirm-btn confirm-btn--cancel" onClick={onCancel}>
+          <button className="confirm-btn confirm-btn--cancel" onClick={onCancel} type="button">
             Cancelar
           </button>
           <button
             className="confirm-btn confirm-btn--confirm"
             style={{ background: color }}
             onClick={onConfirm}
+            type="button"
           >
             Borrar
           </button>
@@ -106,12 +99,10 @@ function ConfirmDialog({ message, onConfirm, onCancel, color }) {
         }
         .confirm-btn:active { opacity: 0.75; }
         .confirm-btn--cancel {
-          background: #eeeeee;
+          background: rgba(0,0,0,0.08);
           color: var(--color-text);
         }
-        .confirm-btn--confirm {
-          color: white;
-        }
+        .confirm-btn--confirm { color: white; }
       `}</style>
     </div>
   )
