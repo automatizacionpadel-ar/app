@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+  <defs>
+    <clipPath id="clip">
+      <rect width="192" height="192" rx="42.24" ry="42.24"/>
+    </clipPath>
+  </defs>
+  <rect width="192" height="192" rx="42.24" ry="42.24" fill="#4ECDC4"/>
+  <circle cx="96" cy="96" r="69.12" fill="rgba(255,255,255,0.25)"/>
+  <text
+    x="96"
+    y="96"
+    text-anchor="middle"
+    dominant-baseline="central"
+    font-family="Arial, Helvetica, sans-serif"
+    font-size="58"
+    font-weight="bold"
+    fill="white"
+    letter-spacing="2"
+  >ZS</text>
+</svg>
