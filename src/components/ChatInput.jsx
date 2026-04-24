@@ -29,6 +29,15 @@ export default function ChatInput({ onSend, disabled }) {
   const audioChunksRef = useRef([])
   const timerRef = useRef(null)
 
+  // Auto-focus cuando el input se habilita (ej: después de que responde el bot)
+  const prevDisabled = useRef(disabled)
+  useEffect(() => {
+    if (prevDisabled.current && !disabled && !recording && textareaRef.current) {
+      textareaRef.current.focus()
+    }
+    prevDisabled.current = disabled
+  }, [disabled, recording])
+
   // Limpiar timer al desmontar
   useEffect(() => {
     return () => {
