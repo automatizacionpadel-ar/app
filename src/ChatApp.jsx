@@ -14,6 +14,10 @@ function getStorageKey(rubro, slug) {
   return `chat_${rubro}_${slug}`
 }
 
+function getConversationIdKey(rubro, slug) {
+  return `conv_id_${rubro}_${slug}`
+}
+
 function loadMessages(rubro, slug) {
   try {
     const raw = localStorage.getItem(getStorageKey(rubro, slug))
@@ -29,6 +33,24 @@ function saveMessages(rubro, slug, messages) {
   } catch (e) {
     console.error('[Storage] Error al guardar:', e)
   }
+}
+
+function loadOrCreateConversationId(rubro, slug) {
+  try {
+    const stored = localStorage.getItem(getConversationIdKey(rubro, slug))
+    if (stored) return stored
+    const newId = generateId()
+    localStorage.setItem(getConversationIdKey(rubro, slug), newId)
+    return newId
+  } catch {
+    return generateId()
+  }
+}
+
+function saveConversationId(rubro, slug, id) {
+  try {
+    localStorage.setItem(getConversationIdKey(rubro, slug), id)
+  } catch {}
 }
 
 
@@ -82,14 +104,32 @@ export default function ChatApp() {
   const [messages, setMessages] = useState([])
   const [isTyping, setIsTyping] = useState(false)
   const [inputDisabled, setInputDisabled] = useState(false)
-  const conversationIdRef = useRef(generateId())
+  const conversationIdRef = useRef(null)
   const initializedRef = useRef(false)
+  const paymentReturnRef = useRef(null)
+  const paymentSentRef = useRef(false)
 
   useEffect(() => {
     if (status !== 'ready' || !negocio || initializedRef.current) return
     initializedRef.current = true
 
     applyTheme(negocio, rubro, slug)
+
+    const params = new URLSearchParams(window.location.search)
+    const mpStatus = params.get('collection_status') || params.get('status')
+    const externalRef = params.get('external_reference')
+    const paymentId = params.get('collection_id') || params.get('payment_id')
+
+    if (externalRef) {
+      conversationIdRef.current = externalRef
+      saveConversationId(rubro, slug, externalRef)
+      window.history.replaceState({}, '', window.location.pathname)
+      if (mpStatus) {
+        paymentReturnRef.current = { status: mpStatus, paymentId: paymentId || '' }
+      }
+    } else {
+      conversationIdRef.current = loadOrCreateConversationId(rubro, slug)
+    }
 
     const saved = loadMessages(rubro, slug)
     if (saved && saved.length > 0) {
@@ -107,6 +147,13 @@ export default function ChatApp() {
   }, [status, negocio, rubro, slug])
 
   useEffect(() => {
+    if (paymentSentRef.current || !paymentReturnRef.current || messages.length === 0 || inputDisabled || !negocio) return
+    paymentSentRef.current = true
+    const { status: mpStatus, paymentId } = paymentReturnRef.current
+    sendMessage({ type: 'payment_return', text: '', silent: true, paymentStatus: mpStatus, paymentId })
+  }, [messages, inputDisabled, negocio, sendMessage])
+
+  useEffect(() => {
     if (status === 'ready' && messages.length > 0) {
       saveMessages(rubro, slug, messages)
     }
@@ -117,17 +164,18 @@ export default function ChatApp() {
       if (inputDisabled || !negocio) return
       if (payload.type === 'text' && !payload.text?.trim()) return
 
-      const userMsg = {
-        id: generateId(),
-        role: 'user',
-        type: payload.type,
-        text: payload.text || '',
-        mediaData: payload.mediaData || null,
-        mimeType: payload.mimeType || null,
-        timestamp: Date.now(),
+      if (!payload.silent) {
+        const userMsg = {
+          id: generateId(),
+          role: 'user',
+          type: payload.type,
+          text: payload.text || '',
+          mediaData: payload.mediaData || null,
+          mimeType: payload.mimeType || null,
+          timestamp: Date.now(),
+        }
+        setMessages((prev) => [...prev, userMsg])
       }
-
-      setMessages((prev) => [...prev, userMsg])
       setInputDisabled(true)
       setIsTyping(true)
 
@@ -144,6 +192,8 @@ export default function ChatApp() {
             ...(payload.mediaData && { mediaData: payload.mediaData }),
             ...(payload.mimeType && { mimeType: payload.mimeType }),
             ...(payload.fileName && { fileName: payload.fileName }),
+            ...(payload.paymentStatus && { paymentStatus: payload.paymentStatus }),
+            ...(payload.paymentId && { paymentId: payload.paymentId }),
           }),
         })
 
@@ -197,7 +247,10 @@ export default function ChatApp() {
   function clearHistory() {
     if (!rubro || !slug) return
     localStorage.removeItem(getStorageKey(rubro, slug))
-    conversationIdRef.current = generateId()
+    const newId = generateId()
+    conversationIdRef.current = newId
+    saveConversationId(rubro, slug, newId)
+    paymentSentRef.current = false
     setMessages([
       {
         id: generateId(),
