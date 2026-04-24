@@ -109,56 +109,6 @@ export default function ChatApp() {
   const paymentReturnRef = useRef(null)
   const paymentSentRef = useRef(false)
 
-  useEffect(() => {
-    if (status !== 'ready' || !negocio || initializedRef.current) return
-    initializedRef.current = true
-
-    applyTheme(negocio, rubro, slug)
-
-    const params = new URLSearchParams(window.location.search)
-    const mpStatus = params.get('collection_status') || params.get('status')
-    const externalRef = params.get('external_reference')
-    const paymentId = params.get('collection_id') || params.get('payment_id')
-
-    if (externalRef) {
-      conversationIdRef.current = externalRef
-      saveConversationId(rubro, slug, externalRef)
-      window.history.replaceState({}, '', window.location.pathname)
-      if (mpStatus) {
-        paymentReturnRef.current = { status: mpStatus, paymentId: paymentId || '' }
-      }
-    } else {
-      conversationIdRef.current = loadOrCreateConversationId(rubro, slug)
-    }
-
-    const saved = loadMessages(rubro, slug)
-    if (saved && saved.length > 0) {
-      setMessages(saved)
-    } else {
-      setMessages([
-        {
-          id: generateId(),
-          role: 'bot',
-          text: negocio.bienvenida,
-          timestamp: Date.now(),
-        },
-      ])
-    }
-  }, [status, negocio, rubro, slug])
-
-  useEffect(() => {
-    if (paymentSentRef.current || !paymentReturnRef.current || messages.length === 0 || inputDisabled || !negocio) return
-    paymentSentRef.current = true
-    const { status: mpStatus, paymentId } = paymentReturnRef.current
-    sendMessage({ type: 'payment_return', text: '', silent: true, paymentStatus: mpStatus, paymentId })
-  }, [messages, inputDisabled, negocio, sendMessage])
-
-  useEffect(() => {
-    if (status === 'ready' && messages.length > 0) {
-      saveMessages(rubro, slug, messages)
-    }
-  }, [messages, status, rubro, slug])
-
   const sendMessage = useCallback(
     async (payload) => {
       if (inputDisabled || !negocio) return
@@ -243,6 +193,56 @@ export default function ChatApp() {
     },
     [negocio, inputDisabled]
   )
+
+  useEffect(() => {
+    if (status !== 'ready' || !negocio || initializedRef.current) return
+    initializedRef.current = true
+
+    applyTheme(negocio, rubro, slug)
+
+    const params = new URLSearchParams(window.location.search)
+    const mpStatus = params.get('collection_status') || params.get('status')
+    const externalRef = params.get('external_reference')
+    const paymentId = params.get('collection_id') || params.get('payment_id')
+
+    if (externalRef) {
+      conversationIdRef.current = externalRef
+      saveConversationId(rubro, slug, externalRef)
+      window.history.replaceState({}, '', window.location.pathname)
+      if (mpStatus) {
+        paymentReturnRef.current = { status: mpStatus, paymentId: paymentId || '' }
+      }
+    } else {
+      conversationIdRef.current = loadOrCreateConversationId(rubro, slug)
+    }
+
+    const saved = loadMessages(rubro, slug)
+    if (saved && saved.length > 0) {
+      setMessages(saved)
+    } else {
+      setMessages([
+        {
+          id: generateId(),
+          role: 'bot',
+          text: negocio.bienvenida,
+          timestamp: Date.now(),
+        },
+      ])
+    }
+  }, [status, negocio, rubro, slug])
+
+  useEffect(() => {
+    if (paymentSentRef.current || !paymentReturnRef.current || messages.length === 0 || inputDisabled || !negocio) return
+    paymentSentRef.current = true
+    const { status: mpStatus, paymentId } = paymentReturnRef.current
+    sendMessage({ type: 'payment_return', text: '', silent: true, paymentStatus: mpStatus, paymentId })
+  }, [messages, inputDisabled, negocio, sendMessage])
+
+  useEffect(() => {
+    if (status === 'ready' && messages.length > 0) {
+      saveMessages(rubro, slug, messages)
+    }
+  }, [messages, status, rubro, slug])
 
   function clearHistory() {
     if (!rubro || !slug) return
