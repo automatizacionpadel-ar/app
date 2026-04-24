@@ -14,10 +14,6 @@ function getStorageKey(rubro, slug) {
   return `chat_${rubro}_${slug}`
 }
 
-function getConvKey(rubro, slug) {
-  return `conv_${rubro}_${slug}`
-}
-
 function loadMessages(rubro, slug) {
   try {
     const raw = localStorage.getItem(getStorageKey(rubro, slug))
@@ -35,15 +31,6 @@ function saveMessages(rubro, slug, messages) {
   }
 }
 
-function getOrCreateConversationId(rubro, slug) {
-  const key = getConvKey(rubro, slug)
-  let id = localStorage.getItem(key)
-  if (!id) {
-    id = generateId()
-    localStorage.setItem(key, id)
-  }
-  return id
-}
 
 function applyTheme(negocio, rubro, slug) {
   document.title = negocio.nombre
@@ -95,14 +82,13 @@ export default function ChatApp() {
   const [messages, setMessages] = useState([])
   const [isTyping, setIsTyping] = useState(false)
   const [inputDisabled, setInputDisabled] = useState(false)
-  const conversationIdRef = useRef(null)
+  const conversationIdRef = useRef(generateId())
   const initializedRef = useRef(false)
 
   useEffect(() => {
     if (status !== 'ready' || !negocio || initializedRef.current) return
     initializedRef.current = true
 
-    conversationIdRef.current = getOrCreateConversationId(rubro, slug)
     applyTheme(negocio, rubro, slug)
 
     const saved = loadMessages(rubro, slug)
@@ -211,8 +197,7 @@ export default function ChatApp() {
   function clearHistory() {
     if (!rubro || !slug) return
     localStorage.removeItem(getStorageKey(rubro, slug))
-    localStorage.removeItem(getConvKey(rubro, slug))
-    conversationIdRef.current = getOrCreateConversationId(rubro, slug)
+    conversationIdRef.current = generateId()
     setMessages([
       {
         id: generateId(),
