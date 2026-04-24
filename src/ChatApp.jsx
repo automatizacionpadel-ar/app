@@ -37,8 +37,15 @@ function saveMessages(rubro, slug, messages) {
 
 function loadOrCreateConversationId(rubro, slug) {
   try {
-    const stored = localStorage.getItem(getConversationIdKey(rubro, slug))
-    if (stored) return stored
+    let stored = localStorage.getItem(getConversationIdKey(rubro, slug))
+    if (stored) {
+      // If it's the compound external_reference format (chatId_cancha_fecha), recover the simple chatId
+      if (stored.includes('_')) {
+        stored = stored.split('_')[0]
+        localStorage.setItem(getConversationIdKey(rubro, slug), stored)
+      }
+      return stored
+    }
     const newId = generateId()
     localStorage.setItem(getConversationIdKey(rubro, slug), newId)
     return newId
@@ -264,15 +271,14 @@ export default function ChatApp() {
     const externalRef = params.get('external_reference')
     const paymentId = params.get('collection_id') || params.get('payment_id')
 
+    // Always use the original conversationId — never overwrite with the compound external_reference from MP
+    conversationIdRef.current = loadOrCreateConversationId(rubro, slug)
+
     if (externalRef) {
-      conversationIdRef.current = externalRef
-      saveConversationId(rubro, slug, externalRef)
       window.history.replaceState({}, '', window.location.pathname)
       if (mpStatus) {
         paymentReturnRef.current = { status: mpStatus, paymentId: paymentId || '' }
       }
-    } else {
-      conversationIdRef.current = loadOrCreateConversationId(rubro, slug)
     }
 
     const saved = loadMessages(rubro, slug)
