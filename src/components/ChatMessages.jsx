@@ -120,10 +120,18 @@ function renderText(text) {
   })
 }
 
-function MessageBubble({ message }) {
+function MessageBubble({ message, onButtonClick }) {
   const isUser = message.role === 'user'
   const isError = message.role === 'error'
   const bubbleClass = isError ? 'error' : isUser ? 'user' : 'bot'
+
+  function handleButtonClick(btn) {
+    if (btn.type === 'url') {
+      window.open(btn.url, '_blank', 'noopener,noreferrer')
+    } else if (btn.type === 'postback' && onButtonClick) {
+      onButtonClick({ type: 'text', text: btn.value })
+    }
+  }
 
   return (
     <div className={`message-wrapper message-wrapper--${bubbleClass}`}>
@@ -155,6 +163,22 @@ function MessageBubble({ message }) {
           <div className="message-time">{formatTime(message.timestamp)}</div>
         )}
       </div>
+
+      {/* Botones de respuesta rápida */}
+      {!isUser && !isError && message.buttons && message.buttons.length > 0 && (
+        <div className="message-buttons">
+          {message.buttons.map((btn, i) => (
+            <button
+              key={i}
+              className="message-btn"
+              onClick={() => handleButtonClick(btn)}
+              type="button"
+            >
+              {btn.label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -171,7 +195,7 @@ function TypingIndicator() {
   )
 }
 
-export default function ChatMessages({ messages, isTyping }) {
+export default function ChatMessages({ messages, isTyping, onButtonClick }) {
   const anchorRef = useRef(null)
 
   useEffect(() => {
@@ -181,7 +205,7 @@ export default function ChatMessages({ messages, isTyping }) {
   return (
     <main className="chat-messages" role="log" aria-live="polite" aria-label="Mensajes del chat">
       {messages.map((msg) => (
-        <MessageBubble key={msg.id} message={msg} />
+        <MessageBubble key={msg.id} message={msg} onButtonClick={onButtonClick} />
       ))}
       {isTyping && <TypingIndicator />}
       <div className="messages-anchor" ref={anchorRef} />

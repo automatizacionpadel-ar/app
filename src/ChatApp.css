@@ -311,6 +311,39 @@ body {
 }
 
 /* ===========================
+   Message Buttons
+   =========================== */
+.message-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+  max-width: 82%;
+  align-self: flex-start;
+}
+
+.message-btn {
+  background: #fff;
+  border: 1.5px solid var(--color-primary);
+  color: var(--color-primary);
+  border-radius: 18px;
+  padding: 9px 18px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.message-btn:hover,
+.message-btn:active {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+/* ===========================
    Typing Indicator
    =========================== */
 .typing-wrapper {

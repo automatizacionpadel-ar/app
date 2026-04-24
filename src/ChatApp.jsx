@@ -45,7 +45,7 @@ function getOrCreateConversationId(rubro, slug) {
   return id
 }
 
-function applyTheme(negocio) {
+function applyTheme(negocio, rubro, slug) {
   document.title = negocio.nombre
 
   const themeMeta = document.getElementById('theme-color-meta')
@@ -56,11 +56,36 @@ function applyTheme(negocio) {
 
   const fileSlug = negocio.slug.replace(/-/g, '_')
 
-  const manifestLink = document.getElementById('manifest-link')
-  if (manifestLink) manifestLink.setAttribute('href', `/manifests/manifest_${fileSlug}.json`)
-
   const appleIcon = document.getElementById('apple-icon')
   if (appleIcon) appleIcon.setAttribute('href', `/favicons/favicon_${fileSlug}_192.png`)
+
+  // Genera el manifest dinámicamente con el start_url correcto para esta URL
+  const manifestData = {
+    name: negocio.nombre,
+    short_name: negocio.nombre,
+    description: `Reservá en ${negocio.nombre}`,
+    start_url: `/${rubro}/${slug}`,
+    scope: '/',
+    display: 'standalone',
+    orientation: 'portrait',
+    background_color: negocio.color_primario || '#333333',
+    theme_color: negocio.color_primario || '#333333',
+    lang: 'es',
+    icons: [
+      { src: `/favicons/favicon_${fileSlug}_192.png`, sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+      { src: `/favicons/favicon_${fileSlug}_512.png`, sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
+    ],
+  }
+
+  const blob = new Blob([JSON.stringify(manifestData)], { type: 'application/json' })
+  const manifestUrl = URL.createObjectURL(blob)
+
+  const manifestLink = document.getElementById('manifest-link')
+  if (manifestLink) {
+    const prev = manifestLink.getAttribute('href')
+    if (prev && prev.startsWith('blob:')) URL.revokeObjectURL(prev)
+    manifestLink.setAttribute('href', manifestUrl)
+  }
 }
 
 export default function ChatApp() {
@@ -78,7 +103,7 @@ export default function ChatApp() {
     initializedRef.current = true
 
     conversationIdRef.current = getOrCreateConversationId(rubro, slug)
-    applyTheme(negocio)
+    applyTheme(negocio, rubro, slug)
 
     const saved = loadMessages(rubro, slug)
     if (saved && saved.length > 0) {
@@ -142,7 +167,13 @@ export default function ChatApp() {
         const botText =
           data.botResponse || data.response || data.message || 'Lo siento, no pude procesar tu mensaje.'
 
-        const newMsgs = [{ id: generateId(), role: 'bot', text: botText, timestamp: Date.now() }]
+        const newMsgs = [{
+          id: generateId(),
+          role: 'bot',
+          text: botText,
+          timestamp: Date.now(),
+          buttons: data.botButtons || null,
+        }]
 
         if (data.botImages && data.botImages.length > 0) {
           data.botImages.forEach((img) => {
@@ -207,7 +238,7 @@ export default function ChatApp() {
     >
       <ChatHeader negocio={negocio} onClearHistory={clearHistory} />
       <BusinessCard negocio={negocio} />
-      <ChatMessages messages={messages} isTyping={isTyping} />
+      <ChatMessages messages={messages} isTyping={isTyping} onButtonClick={sendMessage} />
       <ChatInput onSend={sendMessage} disabled={inputDisabled} />
     </div>
   )
