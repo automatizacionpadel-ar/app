@@ -108,6 +108,8 @@ export default function ChatApp() {
   const initializedRef = useRef(false)
   const paymentReturnRef = useRef(null)
   const paymentSentRef = useRef(false)
+  const pollingRef = useRef(null)
+  const pollingCountRef = useRef(0)
 
   const sendMessage = useCallback(
     async (payload) => {
@@ -193,6 +195,63 @@ export default function ChatApp() {
     },
     [negocio, inputDisabled]
   )
+
+  const stopPolling = useCallback(() => {
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current)
+      pollingRef.current = null
+      pollingCountRef.current = 0
+    }
+  }, [])
+
+  const startPaymentPolling = useCallback(() => {
+    if (pollingRef.current || !negocio) return
+    pollingCountRef.current = 0
+    pollingRef.current = setInterval(async () => {
+      if (!negocio || !conversationIdRef.current) return
+      pollingCountRef.current++
+      if (pollingCountRef.current > 100) {
+        stopPolling()
+        return
+      }
+      try {
+        const res = await fetch(negocio.webhook_url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'check_payment',
+            userMessage: '',
+            negocioId: negocio.slug,
+            rubro: negocio.rubro,
+            conversationId: conversationIdRef.current,
+          }),
+        })
+        if (!res.ok) return
+        const data = await res.json()
+        if (data.botResponse) {
+          setMessages((prev) => [
+            ...prev,
+            { id: generateId(), role: 'bot', text: data.botResponse, timestamp: Date.now() },
+          ])
+          stopPolling()
+        }
+      } catch {
+        // silently ignore poll errors
+      }
+    }, 3000)
+  }, [negocio, stopPolling])
+
+  useEffect(() => {
+    if (messages.length === 0 || pollingRef.current) return
+    const lastBotMsg = [...messages].reverse().find((m) => m.role === 'bot')
+    if (lastBotMsg?.buttons?.length > 0) {
+      startPaymentPolling()
+    }
+  }, [messages, startPaymentPolling])
+
+  useEffect(() => {
+    return () => stopPolling()
+  }, [stopPolling])
 
   useEffect(() => {
     if (status !== 'ready' || !negocio || initializedRef.current) return
