@@ -271,7 +271,7 @@ export default function ChatApp() {
     const externalRef = params.get('external_reference')
     const paymentId = params.get('collection_id') || params.get('payment_id')
 
-    // Always use the original conversationId — never overwrite with the compound external_reference from MP
+    // Always use the original conversationId — never overwrite with the compound external_reference from MercadoPago
     conversationIdRef.current = loadOrCreateConversationId(rubro, slug)
 
     if (externalRef) {
@@ -365,3 +365,4 @@ function ErrorScreen({ icon, title, message }) {
     </div>
   )
 }
+// fin del archivo chatApp.jsx
