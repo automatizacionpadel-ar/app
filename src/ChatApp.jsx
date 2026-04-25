@@ -226,13 +226,11 @@ export default function ChatApp() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            body: {
-              type: 'check_payment',
-              userMessage: '',
-              negocioId: negocio.slug,
-              rubro: negocio.rubro,
-              conversationId: conversationIdRef.current,
-            },
+            type: 'check_payment',
+            userMessage: '',
+            negocioId: negocio.slug,
+            rubro: negocio.rubro,
+            conversationId: conversationIdRef.current,
           }),
         })
         if (!res.ok) return
