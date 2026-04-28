@@ -745,6 +745,12 @@ body {
   flex-shrink: 0;
 }
 
+.image-preview-thumb.pdf-icon {
+  object-fit: unset;
+  color: var(--color-primary);
+  padding: 2px;
+}
+
 .image-preview-name {
   font-size: 13px;
   color: var(--color-text);
