@@ -16,5 +16,8 @@ supabase/.env.local
 # Claude Code local settings (may contain secrets)
 .claude/settings.local.json
 
+# TypeScript
+tsconfig.tsbuildinfo
+
 # OS
 .DS_Store
