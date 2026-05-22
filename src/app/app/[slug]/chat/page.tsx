@@ -7,10 +7,11 @@ import Image from 'next/image'
 import { Send, Loader2, ArrowLeft } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
+import CalendarioTurnos from '@/components/chat/CalendarioTurnos'
 
 interface Mensaje {
   id:        string
-  role:      'user' | 'assistant'
+  role:      'user' | 'assistant' | 'calendar'
   content:   string
   timestamp: Date
 }
@@ -123,12 +124,21 @@ export default function ChatPage({ params }: { params: { slug: string } }) {
         body: JSON.stringify({ medico_id: medicoId, chat_id: chatId, message: textoUsuario }),
       })
       const data = await res.json()
-      setMensajes(prev => [...prev, {
-        id:        crypto.randomUUID(),
-        role:      'assistant',
-        content:   data.response || 'Lo siento, no pude procesar tu mensaje.',
-        timestamp: new Date(),
-      }])
+      if (data.action === 'show_calendar') {
+        setMensajes(prev => [...prev, {
+          id:        crypto.randomUUID(),
+          role:      'calendar',
+          content:   data.response || '¡Elegí una fecha disponible!',
+          timestamp: new Date(),
+        }])
+      } else {
+        setMensajes(prev => [...prev, {
+          id:        crypto.randomUUID(),
+          role:      'assistant',
+          content:   data.response || 'Lo siento, no pude procesar tu mensaje.',
+          timestamp: new Date(),
+        }])
+      }
     } catch {
       setMensajes(prev => [...prev, {
         id:        crypto.randomUUID(),
@@ -180,7 +190,24 @@ export default function ChatPage({ params }: { params: { slug: string } }) {
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-4 scrollbar-hide">
-        {mensajes.map(msg => <BurbujaMensaje key={msg.id} mensaje={msg} />)}
+        {mensajes.map(msg => (
+          <div key={msg.id}>
+            <BurbujaMensaje mensaje={msg} />
+            {msg.role === 'calendar' && medicoId && (
+              <CalendarioTurnos
+                medicoId={medicoId}
+                onConfirmed={(label) => {
+                  setMensajes(prev => [...prev, {
+                    id:        crypto.randomUUID(),
+                    role:      'assistant',
+                    content:   `✓ Turno confirmado: ${label}. ¡Te esperamos!`,
+                    timestamp: new Date(),
+                  }])
+                }}
+              />
+            )}
+          </div>
+        ))}
         {loading && <TypingIndicator />}
         <div ref={bottomRef} />
       </div>
