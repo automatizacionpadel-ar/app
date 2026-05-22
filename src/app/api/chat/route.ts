@@ -52,6 +52,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       response: data.response || data.output || 'Sin respuesta del asistente',
+      action:   data.action ?? null,
       chat_id,
     })
   } catch (error) {
