@@ -120,7 +120,7 @@ export default function CalendarioTurnos({ medicoId, onConfirmed }: Props) {
           <p style={{ color: '#5C5C59', fontSize: '11px', marginBottom: '10px' }}>
             Seleccioná una fecha:
           </p>
-          <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
             {dias.map(dia => (
               <button
                 key={dia.fecha}
@@ -131,13 +131,13 @@ export default function CalendarioTurnos({ medicoId, onConfirmed }: Props) {
                   color:        diaSeleccionado?.fecha === dia.fecha ? '#20201F' : '#7AB619',
                   border:       diaSeleccionado?.fecha === dia.fecha ? 'none' : '1px solid rgba(122,182,25,0.3)',
                   borderRadius: '20px',
-                  padding:      '6px 14px',
-                  fontSize:     '12px',
+                  padding:      '6px 8px',
+                  fontSize:     '11px',
                   fontWeight:   600,
-                  flexShrink:   0,
                   cursor:       submitting ? 'not-allowed' : 'pointer',
                   whiteSpace:   'nowrap',
                   opacity:      submitting ? 0.5 : 1,
+                  textAlign:    'center',
                 }}
               >
                 {dia.label}
