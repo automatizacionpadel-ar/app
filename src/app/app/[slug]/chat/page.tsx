@@ -1,11 +1,10 @@
-// src/app/app/chat/page.tsx
+// src/app/app/[slug]/chat/page.tsx
 'use client'
 
-import { useState, useEffect, useRef, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { Send, Loader2, ArrowLeft } from 'lucide-react'
-import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 
@@ -18,7 +17,6 @@ interface Mensaje {
 
 function BurbujaMensaje({ mensaje }: { mensaje: Mensaje }) {
   const esUsuario = mensaje.role === 'user'
-
   return (
     <div className={`flex ${esUsuario ? 'justify-end' : 'justify-start'} mb-3`}>
       {!esUsuario && (
@@ -30,17 +28,14 @@ function BurbujaMensaje({ mensaje }: { mensaje: Mensaje }) {
       <div className="max-w-[78%]">
         <div className="rounded-2xl px-4 py-2.5"
           style={{
-            background:    esUsuario ? '#7AB619' : '#2A2A29',
-            color:         esUsuario ? '#20201F' : '#F0F0EE',
-            borderRadius:  esUsuario ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+            background:   esUsuario ? '#7AB619' : '#2A2A29',
+            color:        esUsuario ? '#20201F' : '#F0F0EE',
+            borderRadius: esUsuario ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
           }}>
           <p className="text-sm leading-relaxed whitespace-pre-wrap">{mensaje.content}</p>
         </div>
         <p className="text-[10px] mt-1 px-1"
-          style={{
-            color:     '#5C5C59',
-            textAlign: esUsuario ? 'right' : 'left'
-          }}>
+          style={{ color: '#5C5C59', textAlign: esUsuario ? 'right' : 'left' }}>
           {format(mensaje.timestamp, 'HH:mm', { locale: es })}
         </p>
       </div>
@@ -55,7 +50,8 @@ function TypingIndicator() {
         style={{ background: 'rgba(122,182,25,0.15)' }}>
         <span style={{ color: '#7AB619', fontSize: '12px' }}>IA</span>
       </div>
-      <div className="rounded-2xl px-4 py-3" style={{ background: '#2A2A29', borderRadius: '18px 18px 18px 4px' }}>
+      <div className="rounded-2xl px-4 py-3"
+        style={{ background: '#2A2A29', borderRadius: '18px 18px 18px 4px' }}>
         <div className="flex gap-1 items-center h-4">
           {[0, 1, 2].map(i => (
             <div key={i} className="w-1.5 h-1.5 rounded-full animate-bounce"
@@ -67,11 +63,11 @@ function TypingIndicator() {
   )
 }
 
-function ChatContent() {
-  const params   = useSearchParams()
+export default function ChatPage({ params }: { params: { slug: string } }) {
+  const { slug } = params
   const router   = useRouter()
-  const medicoId = params.get('m')
 
+  const [medicoId, setMedicoId]   = useState<string | null>(null)
   const [mensajes, setMensajes]   = useState<Mensaje[]>([])
   const [input, setInput]         = useState('')
   const [loading, setLoading]     = useState(false)
@@ -80,24 +76,29 @@ function ChatContent() {
     return localStorage.getItem('simplificia_chat_id') || crypto.randomUUID()
   })
 
-  const bottomRef  = useRef<HTMLDivElement>(null)
-  const inputRef   = useRef<HTMLTextAreaElement>(null)
+  const bottomRef = useRef<HTMLDivElement>(null)
+  const inputRef  = useRef<HTMLTextAreaElement>(null)
 
-  // Scroll al último mensaje
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [mensajes, loading])
 
-  // Mensaje inicial
   useEffect(() => {
-    if (!medicoId) return
-    setMensajes([{
-      id:        'welcome',
-      role:      'assistant',
-      content:   '¡Hola! Soy el asistente del consultorio. ¿En qué puedo ayudarte hoy?',
-      timestamp: new Date(),
-    }])
-  }, [medicoId])
+    fetch(`/api/medicos/publico?slug=${slug}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.id) {
+          setMedicoId(data.id)
+          setMensajes([{
+            id:        'welcome',
+            role:      'assistant',
+            content:   '¡Hola! Soy el asistente del consultorio. ¿En qué puedo ayudarte hoy?',
+            timestamp: new Date(),
+          }])
+        }
+      })
+      .catch(console.error)
+  }, [slug])
 
   async function enviarMensaje() {
     if (!input.trim() || loading || !medicoId) return
@@ -119,15 +120,9 @@ function ChatContent() {
       const res = await fetch('/api/chat', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          medico_id: medicoId,
-          chat_id:   chatId,
-          message:   textoUsuario,
-        }),
+        body: JSON.stringify({ medico_id: medicoId, chat_id: chatId, message: textoUsuario }),
       })
-
       const data = await res.json()
-
       setMensajes(prev => [...prev, {
         id:        crypto.randomUUID(),
         role:      'assistant',
@@ -154,7 +149,6 @@ function ChatContent() {
     }
   }
 
-  // Auto-resize textarea
   function handleInputChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
     setInput(e.target.value)
     e.target.style.height = 'auto'
@@ -164,11 +158,9 @@ function ChatContent() {
   return (
     <div className="flex flex-col h-screen">
 
-      {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 flex-shrink-0"
         style={{ background: '#2A2A29', borderBottom: '1px solid #3D3D3B' }}>
-        <button onClick={() => router.back()}
-          className="rounded-lg p-1.5" style={{ color: '#5C5C59' }}>
+        <button onClick={() => router.back()} className="rounded-lg p-1.5" style={{ color: '#5C5C59' }}>
           <ArrowLeft size={18} />
         </button>
         <div className="w-8 h-8 rounded-full flex items-center justify-center"
@@ -187,16 +179,12 @@ function ChatContent() {
         </div>
       </div>
 
-      {/* Mensajes */}
       <div className="flex-1 overflow-y-auto px-4 py-4 scrollbar-hide">
-        {mensajes.map(msg => (
-          <BurbujaMensaje key={msg.id} mensaje={msg} />
-        ))}
+        {mensajes.map(msg => <BurbujaMensaje key={msg.id} mensaje={msg} />)}
         {loading && <TypingIndicator />}
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
       <div className="flex-shrink-0 px-4 pb-safe-bottom pb-4 pt-2"
         style={{ background: '#20201F', borderTop: '1px solid #2A2A29' }}>
         <div className="flex items-end gap-2 rounded-2xl px-4 py-2"
@@ -210,23 +198,14 @@ function ChatContent() {
             rows={1}
             disabled={loading}
             className="flex-1 bg-transparent text-sm resize-none outline-none scrollbar-hide"
-            style={{
-              color:       '#F0F0EE',
-              maxHeight:   '120px',
-              lineHeight:  '1.5',
-              paddingTop:  '6px',
-              paddingBottom: '6px',
-            }}
+            style={{ color: '#F0F0EE', maxHeight: '120px', lineHeight: '1.5', paddingTop: '6px', paddingBottom: '6px' }}
           />
           <button
             onClick={enviarMensaje}
             disabled={loading || !input.trim()}
             className="rounded-xl p-2.5 flex-shrink-0 transition-all active:scale-90 disabled:opacity-40"
             style={{ background: '#7AB619', color: '#20201F', marginBottom: '2px' }}>
-            {loading
-              ? <Loader2 size={16} className="animate-spin" />
-              : <Send size={16} />
-            }
+            {loading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
           </button>
         </div>
         <p className="text-center text-[10px] mt-2" style={{ color: '#3D3D3B' }}>
@@ -234,13 +213,5 @@ function ChatContent() {
         </p>
       </div>
     </div>
-  )
-}
-
-export default function ChatPage() {
-  return (
-    <Suspense fallback={null}>
-      <ChatContent />
-    </Suspense>
   )
 }
