@@ -1,7 +1,4 @@
 // src/app/api/medicos/publico/route.ts
-// Devuelve datos públicos del médico para mostrar en la PWA del paciente
-// No requiere autenticación — solo datos no sensibles
-
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 
@@ -9,10 +6,10 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
   try {
-    const medicoId = req.nextUrl.searchParams.get('id')
+    const slug = req.nextUrl.searchParams.get('slug')
 
-    if (!medicoId) {
-      return NextResponse.json({ error: 'ID requerido' }, { status: 400 })
+    if (!slug) {
+      return NextResponse.json({ error: 'Slug requerido' }, { status: 400 })
     }
 
     const supabase = createAdminClient()
@@ -21,6 +18,7 @@ export async function GET(req: NextRequest) {
       .from('medicos')
       .select(`
         id,
+        slug,
         nombre_completo,
         especialidad,
         direccion,
@@ -30,7 +28,7 @@ export async function GET(req: NextRequest) {
           mensaje_bienvenida
         )
       `)
-      .eq('id', medicoId)
+      .eq('slug', slug)
       .eq('activo', true)
       .single()
 
@@ -41,11 +39,12 @@ export async function GET(req: NextRequest) {
     const config = (medico.medico_agente_config as any[])?.[0]
 
     return NextResponse.json({
-      id:               medico.id,
-      nombre_completo:  medico.nombre_completo,
-      especialidad:     medico.especialidad,
-      direccion:        medico.direccion,
-      telefono:         medico.telefono,
+      id:                 medico.id,
+      slug:               medico.slug,
+      nombre_completo:    medico.nombre_completo,
+      especialidad:       medico.especialidad,
+      direccion:          medico.direccion,
+      telefono:           medico.telefono,
       mensaje_bienvenida: config?.mensaje_bienvenida ?? null,
     })
   } catch (error) {
