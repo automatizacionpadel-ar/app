@@ -13,5 +13,8 @@ out/
 # Supabase local secrets
 supabase/.env.local
 
+# Claude Code local settings (may contain secrets)
+.claude/settings.local.json
+
 # OS
 .DS_Store
