@@ -27,7 +27,10 @@ export default function CalendarioTurnos({ medicoId, onConfirmed }: Props) {
 
   useEffect(() => {
     fetch(`/api/citas/disponibles?medico_id=${medicoId}`)
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error('Error al cargar turnos')
+        return r.json()
+      })
       .then((data: DiaDisponible[]) => {
         setDias(Array.isArray(data) ? data : [])
         setLoading(false)
@@ -121,7 +124,8 @@ export default function CalendarioTurnos({ medicoId, onConfirmed }: Props) {
             {dias.map(dia => (
               <button
                 key={dia.fecha}
-                onClick={() => { setDiaSeleccionado(dia); setStep('hora') }}
+                disabled={submitting}
+                onClick={() => { setError(null); setDiaSeleccionado(dia); setStep('hora') }}
                 style={{
                   background:   diaSeleccionado?.fecha === dia.fecha ? '#7AB619' : 'rgba(122,182,25,0.15)',
                   color:        diaSeleccionado?.fecha === dia.fecha ? '#20201F' : '#7AB619',
@@ -131,8 +135,9 @@ export default function CalendarioTurnos({ medicoId, onConfirmed }: Props) {
                   fontSize:     '12px',
                   fontWeight:   600,
                   flexShrink:   0,
-                  cursor:       'pointer',
+                  cursor:       submitting ? 'not-allowed' : 'pointer',
                   whiteSpace:   'nowrap',
+                  opacity:      submitting ? 0.5 : 1,
                 }}
               >
                 {dia.label}
@@ -158,7 +163,8 @@ export default function CalendarioTurnos({ medicoId, onConfirmed }: Props) {
             {diaSeleccionado.slots.map(slot => (
               <button
                 key={slot}
-                onClick={() => { setHoraSeleccionada(slot); setStep('confirm') }}
+                disabled={submitting}
+                onClick={() => { setError(null); setHoraSeleccionada(slot); setStep('confirm') }}
                 style={{
                   background:   'rgba(122,182,25,0.15)',
                   color:        '#7AB619',
@@ -166,7 +172,8 @@ export default function CalendarioTurnos({ medicoId, onConfirmed }: Props) {
                   borderRadius: '8px',
                   padding:      '5px 10px',
                   fontSize:     '12px',
-                  cursor:       'pointer',
+                  cursor:       submitting ? 'not-allowed' : 'pointer',
+                  opacity:      submitting ? 0.5 : 1,
                 }}
               >
                 {slot}
