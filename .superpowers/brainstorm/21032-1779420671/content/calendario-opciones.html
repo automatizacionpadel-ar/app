@@ -1,0 +1,124 @@
+<h2>¿Cómo aparece el calendario en el chat?</h2>
+<p class="subtitle">Tres enfoques para mostrar fechas disponibles al paciente</p>
+
+<div class="cards">
+
+  <!-- Opción A -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#20201F;border-radius:12px;padding:12px;font-family:sans-serif">
+        <!-- Mensaje IA -->
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <div style="width:28px;height:28px;border-radius:50%;background:rgba(122,182,25,0.15);display:flex;align-items:center;justify-content:center;font-size:10px;color:#7AB619;flex-shrink:0">IA</div>
+          <div style="background:#2A2A29;border-radius:18px 18px 18px 4px;padding:10px 14px;max-width:80%">
+            <p style="color:#F0F0EE;font-size:12px;margin:0">¡Perfecto! Seleccioná una fecha disponible:</p>
+          </div>
+        </div>
+        <!-- Calendario inline en el chat -->
+        <div style="margin-left:36px;background:#2A2A29;border-radius:12px;padding:12px;border:1px solid #3D3D3B">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <span style="color:#5C5C59;font-size:10px">‹</span>
+            <span style="color:#F0F0EE;font-size:11px;font-weight:600">Mayo 2026</span>
+            <span style="color:#7AB619;font-size:10px">›</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center">
+            <span style="color:#5C5C59;font-size:8px">L</span><span style="color:#5C5C59;font-size:8px">M</span><span style="color:#5C5C59;font-size:8px">M</span><span style="color:#5C5C59;font-size:8px">J</span><span style="color:#5C5C59;font-size:8px">V</span><span style="color:#5C5C59;font-size:8px">S</span><span style="color:#5C5C59;font-size:8px">D</span>
+            <span style="color:#3D3D3B;font-size:9px">26</span><span style="color:#3D3D3B;font-size:9px">27</span><span style="color:#3D3D3B;font-size:9px">28</span><span style="color:#3D3D3B;font-size:9px">29</span><span style="color:#3D3D3B;font-size:9px">30</span><span style="color:#3D3D3B;font-size:9px">1</span><span style="color:#3D3D3B;font-size:9px">2</span>
+            <span style="background:#7AB619;color:#20201F;border-radius:50%;width:18px;height:18px;font-size:9px;display:flex;align-items:center;justify-content:center;margin:auto">22</span>
+            <span style="background:rgba(122,182,25,0.2);color:#7AB619;border-radius:50%;width:18px;height:18px;font-size:9px;display:flex;align-items:center;justify-content:center;margin:auto">23</span>
+            <span style="color:#3D3D3B;font-size:9px">24</span>
+            <span style="background:rgba(122,182,25,0.2);color:#7AB619;border-radius:50%;width:18px;height:18px;font-size:9px;display:flex;align-items:center;justify-content:center;margin:auto">25</span>
+            <span style="background:rgba(122,182,25,0.2);color:#7AB619;border-radius:50%;width:18px;height:18px;font-size:9px;display:flex;align-items:center;justify-content:center;margin:auto">26</span>
+            <span style="color:#3D3D3B;font-size:9px">27</span><span style="color:#3D3D3B;font-size:9px">28</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Calendario inline en el chat</h3>
+      <p>El calendario aparece como un mensaje especial dentro de la burbuja de chat. El paciente elige fecha ahí mismo y luego aparece la selección de horario.</p>
+    </div>
+  </div>
+
+  <!-- Opción B -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#20201F;border-radius:12px;padding:12px;font-family:sans-serif">
+        <!-- Mensaje IA -->
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <div style="width:28px;height:28px;border-radius:50%;background:rgba(122,182,25,0.15);display:flex;align-items:center;justify-content:center;font-size:10px;color:#7AB619;flex-shrink:0">IA</div>
+          <div style="background:#2A2A29;border-radius:18px 18px 18px 4px;padding:10px 14px;max-width:80%">
+            <p style="color:#F0F0EE;font-size:12px;margin:0">¡Perfecto! Elegí una fecha:</p>
+          </div>
+        </div>
+        <!-- Chips de fechas -->
+        <div style="margin-left:36px;display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+          <span style="background:#7AB619;color:#20201F;border-radius:20px;padding:5px 12px;font-size:10px;font-weight:600">Vie 22/5</span>
+          <span style="background:rgba(122,182,25,0.15);color:#7AB619;border:1px solid rgba(122,182,25,0.3);border-radius:20px;padding:5px 12px;font-size:10px">Lun 25/5</span>
+          <span style="background:rgba(122,182,25,0.15);color:#7AB619;border:1px solid rgba(122,182,25,0.3);border-radius:20px;padding:5px 12px;font-size:10px">Mar 26/5</span>
+          <span style="background:rgba(122,182,25,0.15);color:#7AB619;border:1px solid rgba(122,182,25,0.3);border-radius:20px;padding:5px 12px;font-size:10px">Mié 27/5</span>
+          <span style="background:rgba(122,182,25,0.15);color:#7AB619;border:1px solid rgba(122,182,25,0.3);border-radius:20px;padding:5px 12px;font-size:10px">Jue 28/5</span>
+        </div>
+        <!-- Luego los horarios -->
+        <div style="margin-left:36px;background:#2A2A29;border-radius:10px;padding:8px;border:1px solid #3D3D3B">
+          <p style="color:#5C5C59;font-size:9px;margin:0 0 6px 0">Horarios para Vie 22/5:</p>
+          <div style="display:flex;flex-wrap:wrap;gap:4px">
+            <span style="background:rgba(122,182,25,0.15);color:#7AB619;border-radius:8px;padding:4px 8px;font-size:9px">09:00</span>
+            <span style="background:rgba(122,182,25,0.15);color:#7AB619;border-radius:8px;padding:4px 8px;font-size:9px">09:30</span>
+            <span style="background:rgba(122,182,25,0.15);color:#7AB619;border-radius:8px;padding:4px 8px;font-size:9px">10:00</span>
+            <span style="background:#3D3D3B;color:#5C5C59;border-radius:8px;padding:4px 8px;font-size:9px;text-decoration:line-through">10:30</span>
+            <span style="background:rgba(122,182,25,0.15);color:#7AB619;border-radius:8px;padding:4px 8px;font-size:9px">11:00</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Chips de fecha + horarios (recomendado)</h3>
+      <p>Muestra los próximos días disponibles como chips tocables. Al elegir fecha aparecen los horarios libres. Más compacto y mobile-friendly que un calendario completo.</p>
+    </div>
+  </div>
+
+  <!-- Opción C -->
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#20201F;border-radius:12px;padding:12px;font-family:sans-serif">
+        <!-- Mensaje IA -->
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <div style="width:28px;height:28px;border-radius:50%;background:rgba(122,182,25,0.15);display:flex;align-items:center;justify-content:center;font-size:10px;color:#7AB619;flex-shrink:0">IA</div>
+          <div style="background:#2A2A29;border-radius:18px 18px 18px 4px;padding:10px 14px;max-width:80%">
+            <p style="color:#F0F0EE;font-size:12px;margin:0">¡Perfecto! Presioná el botón para elegir tu turno:</p>
+          </div>
+        </div>
+        <!-- Botón que abre modal -->
+        <div style="margin-left:36px;margin-bottom:8px">
+          <button style="background:#7AB619;color:#20201F;border:none;border-radius:12px;padding:10px 18px;font-size:11px;font-weight:600;cursor:pointer">📅 Ver turnos disponibles</button>
+        </div>
+        <!-- Modal simulado -->
+        <div style="background:#2A2A29;border-radius:12px;padding:12px;border:1px solid #3D3D3B">
+          <p style="color:#F0F0EE;font-size:10px;font-weight:600;margin:0 0 8px 0">Turnos disponibles</p>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <span style="color:#5C5C59;font-size:9px">‹ Mayo 2026 ›</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;margin-bottom:8px">
+            <span style="color:#5C5C59;font-size:7px">L</span><span style="color:#5C5C59;font-size:7px">M</span><span style="color:#5C5C59;font-size:7px">M</span><span style="color:#5C5C59;font-size:7px">J</span><span style="color:#5C5C59;font-size:7px">V</span><span style="color:#5C5C59;font-size:7px">S</span><span style="color:#5C5C59;font-size:7px">D</span>
+            <span style="background:#7AB619;color:#20201F;border-radius:50%;width:16px;height:16px;font-size:8px;display:flex;align-items:center;justify-content:center;margin:auto">22</span>
+            <span style="color:#3D3D3B;font-size:8px">23</span><span style="color:#3D3D3B;font-size:8px">24</span>
+            <span style="background:rgba(122,182,25,0.2);color:#7AB619;border-radius:50%;width:16px;height:16px;font-size:8px;display:flex;align-items:center;justify-content:center;margin:auto">25</span>
+            <span style="background:rgba(122,182,25,0.2);color:#7AB619;border-radius:50%;width:16px;height:16px;font-size:8px;display:flex;align-items:center;justify-content:center;margin:auto">26</span>
+            <span style="color:#3D3D3B;font-size:8px">27</span><span style="color:#3D3D3B;font-size:8px">28</span>
+          </div>
+          <div style="display:flex;gap:4px;flex-wrap:wrap">
+            <span style="background:rgba(122,182,25,0.15);color:#7AB619;border-radius:6px;padding:3px 7px;font-size:9px">09:00</span>
+            <span style="background:rgba(122,182,25,0.15);color:#7AB619;border-radius:6px;padding:3px 7px;font-size:9px">10:00</span>
+            <span style="background:rgba(122,182,25,0.15);color:#7AB619;border-radius:6px;padding:3px 7px;font-size:9px">11:00</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — Botón que abre panel completo</h3>
+      <p>El chat muestra un botón. Al tocarlo se expande un panel con el calendario completo + horarios. Más espacio para mostrar todo el mes.</p>
+    </div>
+  </div>
+
+</div>

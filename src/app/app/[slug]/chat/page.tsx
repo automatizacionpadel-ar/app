@@ -76,6 +76,7 @@ export default function ChatPage({ params }: { params: { slug: string } }) {
     if (typeof window === 'undefined') return ''
     return localStorage.getItem('simplificia_chat_id') || crypto.randomUUID()
   })
+  const [confirmedCalendarIds, setConfirmedCalendarIds] = useState<Set<string>>(new Set())
 
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef  = useRef<HTMLTextAreaElement>(null)
@@ -193,10 +194,15 @@ export default function ChatPage({ params }: { params: { slug: string } }) {
         {mensajes.map(msg => (
           <div key={msg.id}>
             <BurbujaMensaje mensaje={msg} />
-            {msg.role === 'calendar' && medicoId && (
+            {msg.role === 'calendar' && medicoId && !confirmedCalendarIds.has(msg.id) && (
               <CalendarioTurnos
                 medicoId={medicoId}
                 onConfirmed={(label) => {
+                  setConfirmedCalendarIds(prev => {
+                    const next = new Set(prev)
+                    next.add(msg.id)
+                    return next
+                  })
                   setMensajes(prev => [...prev, {
                     id:        crypto.randomUUID(),
                     role:      'assistant',
