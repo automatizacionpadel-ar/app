@@ -1,7 +1,7 @@
 // src/app/app/chat/page.tsx
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { Send, Loader2, ArrowLeft } from 'lucide-react'
@@ -67,7 +67,7 @@ function TypingIndicator() {
   )
 }
 
-export default function ChatPage() {
+function ChatContent() {
   const params   = useSearchParams()
   const router   = useRouter()
   const medicoId = params.get('m')
@@ -234,5 +234,13 @@ export default function ChatPage() {
         </p>
       </div>
     </div>
+  )
+}
+
+export default function ChatPage() {
+  return (
+    <Suspense fallback={null}>
+      <ChatContent />
+    </Suspense>
   )
 }

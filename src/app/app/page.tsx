@@ -5,7 +5,7 @@
 
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { MessageCircle, Bell, BellOff, Loader2 } from 'lucide-react'
@@ -18,7 +18,7 @@ interface MedicoPublico {
   mensaje_bienvenida?: string
 }
 
-export default function AppPage() {
+function AppContent() {
   const params   = useSearchParams()
   const router   = useRouter()
   const medicoId = params.get('m')
@@ -158,5 +158,13 @@ export default function AppPage() {
         💡 Instalá esta app en tu celular para acceder más rápido
       </p>
     </div>
+  )
+}
+
+export default function AppPage() {
+  return (
+    <Suspense fallback={null}>
+      <AppContent />
+    </Suspense>
   )
 }
