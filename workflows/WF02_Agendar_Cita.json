@@ -1,0 +1,165 @@
+{
+  "name": "05b - Agendar cita médica - subWF",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            { "name": "medico_id" },
+            { "name": "paciente_id" },
+            { "name": "chat_id" },
+            { "name": "nombre" },
+            { "name": "apellido" },
+            { "name": "celular" },
+            { "name": "fecha" },
+            { "name": "hora" },
+            { "name": "motivo" },
+            { "name": "monto" }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [-1600, -320],
+      "id": "node-trigger",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputData = $input.item.json;\nconst fechaRaw = inputData.fecha.replace(/\\//g, '-');\nconst horaRaw = String(inputData.hora);\nconst partes = fechaRaw.split('-').map(Number);\nlet d, m, y;\nif (partes[0] > 1000) { [y, m, d] = partes; }\nelse if (partes[2] > 1000) { [d, m, y] = partes; }\nelse { [d, m, y] = partes; y += 2000; }\nconst horaPartes = horaRaw.replace(':', '.').split('.');\nconst horas = parseInt(horaPartes[0]);\nconst minutos = parseInt(horaPartes[1] || '0');\nconst duracion = parseInt(inputData.duracion_min || 30);\nconst fechaObj = new Date(y, m - 1, d, horas, minutos, 0);\nconst fechaFin = new Date(fechaObj.getTime() + duracion * 60000);\nconst pad = n => String(n).padStart(2, '0');\nconst toISO = (date) => `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:00-03:00`;\nreturn {\n  ...inputData,\n  fecha_hora_iso_start: toISO(fechaObj),\n  fecha_hora_iso_end: toISO(fechaFin),\n  fecha_formateada: `${pad(d)}/${pad(m)}/${y}`,\n  hora_formateada: `${pad(horas)}:${pad(minutos)}`\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-1376, -320],
+      "id": "node-convertir-fecha",
+      "name": "Convertir fecha"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://TU-PROYECTO.supabase.co/rest/v1/citas?medico_id=eq.' + $json.medico_id + '&fecha_inicio=lt.' + $json.fecha_hora_iso_end + '&fecha_fin=gt.' + $json.fecha_hora_iso_start + '&estado=neq.cancelada&select=id,fecha_inicio,fecha_fin,estado' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "TU_SUPABASE_SERVICE_ROLE_KEY" },
+            { "name": "Authorization", "value": "Bearer TU_SUPABASE_SERVICE_ROLE_KEY" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [-1152, -320],
+      "id": "node-consultar-disponibilidad",
+      "name": "Consultar disponibilidad"
+    },
+    {
+      "parameters": {
+        "jsCode": "const citas = $input.all();\nconst hayConflicto = citas.length > 0 && citas[0].json && citas[0].json.id !== undefined;\nconst datos = $('Convertir fecha').first().json;\nreturn {\n  ...datos,\n  disponible: !hayConflicto,\n  mensaje_estado: hayConflicto ? 'OCUPADO' : 'OK',\n  citas_en_conflicto: hayConflicto ? citas.map(c => c.json) : []\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-928, -320],
+      "id": "node-verificar-disponibilidad",
+      "name": "Verificar disponibilidad"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": false, "typeValidation": "strict", "version": 2 },
+          "conditions": [
+            {
+              "id": "cond-disponible",
+              "leftValue": "={{ $json.mensaje_estado }}",
+              "rightValue": "OK",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [-704, -320],
+      "id": "node-horario-libre",
+      "name": "Horario disponible?"
+    },
+    {
+      "parameters": {
+        "jsCode": "const datos = $('Verificar disponibilidad').first().json;\nreturn {\n  status: 'horario_ocupado',\n  mensaje_para_agente: `El horario ${datos.hora_formateada} del ${datos.fecha_formateada} ya tiene una cita agendada. Por favor ofrecé un horario alternativo al paciente.`,\n  fecha_solicitada: datos.fecha_formateada,\n  hora_solicitada: datos.hora_formateada\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-480, -160],
+      "id": "node-caso-ocupado",
+      "name": "Caso ocupado"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://TU-PROYECTO.supabase.co/rest/v1/citas",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "TU_SUPABASE_SERVICE_ROLE_KEY" },
+            { "name": "Authorization", "value": "Bearer TU_SUPABASE_SERVICE_ROLE_KEY" },
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Prefer", "value": "return=representation" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  medico_id: $json.medico_id,\n  paciente_id: $json.paciente_id,\n  fecha_inicio: $json.fecha_hora_iso_start,\n  fecha_fin: $json.fecha_hora_iso_end,\n  estado: 'pendiente',\n  motivo_consulta: $json.motivo || null,\n  metodo_pago: 'sin_pago',\n  estado_pago: 'pendiente',\n  monto_sena: parseFloat($json.monto) || null,\n  external_reference: $json.chat_id + '_' + $json.fecha_hora_iso_start,\n  origen: 'bot'\n}) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [-480, -480],
+      "id": "node-crear-cita",
+      "name": "Crear cita en Supabase"
+    },
+    {
+      "parameters": {
+        "jsCode": "const cita = $input.first().json[0];\nconst datos = $('Verificar disponibilidad').first().json;\nreturn {\n  status: 'pendiente_confirmacion',\n  cita_id: cita.id,\n  medico_id: datos.medico_id,\n  paciente_id: datos.paciente_id,\n  chat_id: datos.chat_id,\n  nombre: datos.nombre,\n  apellido: datos.apellido,\n  fecha_formateada: datos.fecha_formateada,\n  hora_formateada: datos.hora_formateada,\n  fecha_hora_iso_start: datos.fecha_hora_iso_start,\n  fecha_hora_iso_end: datos.fecha_hora_iso_end,\n  motivo: datos.motivo || null,\n  monto: datos.monto || 0,\n  external_reference: cita.external_reference,\n  mensaje_para_agente: `Cita agendada correctamente para ${datos.nombre} ${datos.apellido || ''} el ${datos.fecha_formateada} a las ${datos.hora_formateada}hs. ID de cita: ${cita.id}. Estado: pendiente de confirmación de pago.`\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-240, -480],
+      "id": "node-caso-agendado",
+      "name": "Caso agendado"
+    }
+  ],
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [[{ "node": "Convertir fecha", "type": "main", "index": 0 }]]
+    },
+    "Convertir fecha": {
+      "main": [[{ "node": "Consultar disponibilidad", "type": "main", "index": 0 }]]
+    },
+    "Consultar disponibilidad": {
+      "main": [[{ "node": "Verificar disponibilidad", "type": "main", "index": 0 }]]
+    },
+    "Verificar disponibilidad": {
+      "main": [[{ "node": "Horario disponible?", "type": "main", "index": 0 }]]
+    },
+    "Horario disponible?": {
+      "main": [
+        [{ "node": "Crear cita en Supabase", "type": "main", "index": 0 }],
+        [{ "node": "Caso ocupado", "type": "main", "index": 0 }]
+      ]
+    },
+    "Crear cita en Supabase": {
+      "main": [[{ "node": "Caso agendado", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "instanceId": "e663904003f2676a92c20d36a5b372551af6e923584acdd42e8d70f0a89c4c5c"
+  },
+  "tags": []
+}

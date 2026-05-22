@@ -1,0 +1,157 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Design tokens ─────────────────────────────────────────── */
+:root {
+  --color-brand:           #7AB619;
+  --color-brand-hover:     #8FD01E;
+  --color-brand-muted:     rgba(122, 182, 25, 0.12);
+  --color-brand-rgb:       122, 182, 25;
+
+  --color-surface-base:    #20201F;
+  --color-surface-raised:  #2A2A29;
+  --color-surface-overlay: #333332;
+  --color-surface-border:  #3D3D3B;
+
+  --color-text-primary:    #F0F0EE;
+  --color-text-secondary:  #9A9A96;
+  --color-text-tertiary:   #5C5C59;
+
+  --color-success:         #7AB619;
+  --color-warning:         #F59E0B;
+  --color-error:           #EF4444;
+  --color-info:            #3B82F6;
+
+  --radius-sm:  4px;
+  --radius-md:  8px;
+  --radius-lg:  12px;
+  --radius-xl:  16px;
+
+  --shadow-sm:    0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md:    0 4px 16px rgba(0,0,0,0.4);
+  --shadow-lg:    0 8px 32px rgba(0,0,0,0.5);
+  --shadow-brand: 0 0 0 3px rgba(122,182,25,0.25);
+
+  --duration-fast: 150ms;
+  --duration-base: 250ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ─── Base ───────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--color-surface-base);
+  color: var(--color-text-primary);
+  min-height: 100vh;
+}
+
+/* ─── Scrollbar personalizado ────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--color-surface-base); }
+::-webkit-scrollbar-thumb {
+  background: var(--color-surface-border);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--color-text-tertiary); }
+
+/* ─── Focus visible ──────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}
+
+/* ─── Selección de texto ─────────────────────────────────────── */
+::selection {
+  background: rgba(var(--color-brand-rgb), 0.3);
+  color: var(--color-text-primary);
+}
+
+/* ─── FullCalendar overrides ─────────────────────────────────── */
+.fc {
+  --fc-border-color:              var(--color-surface-border);
+  --fc-page-bg-color:             var(--color-surface-raised);
+  --fc-neutral-bg-color:          var(--color-surface-overlay);
+  --fc-list-event-hover-bg-color: var(--color-surface-overlay);
+  --fc-today-bg-color:            rgba(122, 182, 25, 0.08);
+  --fc-event-bg-color:            var(--color-brand);
+  --fc-event-border-color:        var(--color-brand);
+  --fc-event-text-color:          #20201F;
+  --fc-button-bg-color:           var(--color-surface-overlay);
+  --fc-button-border-color:       var(--color-surface-border);
+  --fc-button-text-color:         var(--color-text-primary);
+  --fc-button-hover-bg-color:     var(--color-brand);
+  --fc-button-hover-border-color: var(--color-brand);
+  --fc-button-hover-text-color:   #20201F;
+  --fc-button-active-bg-color:    var(--color-brand);
+  --fc-button-active-border-color:var(--color-brand);
+}
+
+.fc .fc-toolbar-title {
+  color: var(--color-text-primary);
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.fc .fc-col-header-cell-cushion,
+.fc .fc-daygrid-day-number {
+  color: var(--color-text-secondary);
+  text-decoration: none;
+}
+
+.fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
+  color: var(--color-brand);
+  font-weight: 700;
+}
+
+.fc-event {
+  border-radius: var(--radius-sm) !important;
+  font-size: 0.75rem !important;
+  font-weight: 500 !important;
+  padding: 2px 6px !important;
+  cursor: pointer;
+}
+
+.fc-event-confirmada  { background-color: var(--color-brand) !important; }
+.fc-event-pendiente   { background-color: var(--color-warning) !important; color: #20201F !important; }
+.fc-event-cancelada   { background-color: var(--color-error) !important; }
+.fc-event-completada  { background-color: var(--color-text-tertiary) !important; }
+.fc-event-no_asistio  { background-color: #6B21A8 !important; }
+
+/* ─── Animaciones reducidas ──────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ─── Utilidades extras ──────────────────────────────────────── */
+@layer utilities {
+  .text-balance { text-wrap: balance; }
+
+  .glass {
+    background: rgba(42, 42, 41, 0.8);
+    backdrop-filter: blur(12px) saturate(180%);
+    border: 1px solid var(--color-surface-border);
+  }
+
+  .brand-glow {
+    box-shadow: 0 0 20px rgba(122, 182, 25, 0.3);
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+}

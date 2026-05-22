@@ -1,0 +1,335 @@
+{
+  "name": "01 - Medico Master WF",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chat-medico",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-1200, 160],
+      "id": "node-webhook",
+      "name": "Webhook Chat"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": false, "typeValidation": "loose", "version": 3 },
+          "conditions": [
+            {
+              "id": "cond-token",
+              "leftValue": "={{ $json.body.webhook_token }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEmpty" }
+            },
+            {
+              "id": "cond-message",
+              "leftValue": "={{ $json.body.message }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEmpty" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [-1000, 160],
+      "id": "node-validar-input",
+      "name": "Validar input"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ error: 'webhook_token y message son requeridos' }) }}",
+        "options": { "responseCode": 400 }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [-800, 320],
+      "id": "node-error-400",
+      "name": "Error 400"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://TU-PROYECTO.supabase.co/rest/v1/medicos?webhook_token=eq.' + $json.body.webhook_token + '&select=id,nombre_completo,especialidad,direccion,telefono,horarios,duracion_cita_min,requiere_sena,monto_sena,alias_mp,cbu,titular_cuenta,medico_agente_config(prompt_personalidad,tono,mensaje_bienvenida,mensaje_confirmacion,mensaje_recordatorio),medico_faqs(pregunta,respuesta,orden,activo)&limit=1' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "TU_SUPABASE_ANON_KEY" },
+            { "name": "Authorization", "value": "Bearer TU_SUPABASE_ANON_KEY" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "options": { "retry": { "enabled": true, "maxRetries": 3, "waitBetweenRetries": 1000 } }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [-800, 160],
+      "id": "node-cargar-config",
+      "name": "Cargar config médico"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": false, "typeValidation": "loose", "version": 3 },
+          "conditions": [
+            {
+              "id": "cond-medico",
+              "leftValue": "={{ $json[0] !== undefined && $json[0].id !== undefined }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "equal" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [-560, 160],
+      "id": "node-validar-medico",
+      "name": "Médico existe?"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ error: 'Médico no encontrado para el token provisto' }) }}",
+        "options": { "responseCode": 404 }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [-360, 320],
+      "id": "node-error-404",
+      "name": "Error 404"
+    },
+    {
+      "parameters": {
+        "jsCode": "const medico = $input.first().json[0];\nconst config = (medico.medico_agente_config || [])[0] || {};\nconst faqs = (medico.medico_faqs || [])\n  .filter(f => f.activo !== false)\n  .sort((a, b) => a.orden - b.orden)\n  .map(f => `P: ${f.pregunta}\\nR: ${f.respuesta}`)\n  .join('\\n\\n');\n\nconst horarios = medico.horarios || {};\nconst horariosTexto = Object.entries(horarios)\n  .filter(([_, v]) => v.activo)\n  .map(([dia, v]) => `${dia}: ${v.inicio} a ${v.fin}`)\n  .join(', ') || 'Consultar por teléfono';\n\nconst prompt = `${config.prompt_personalidad || 'Sos el asistente virtual del consultorio. Sos amable, profesional y conciso.'}\n\nINFORMACIÓN DEL CONSULTORIO:\n- Médico: ${medico.nombre_completo}\n- Especialidad: ${medico.especialidad}\n- Dirección: ${medico.direccion || 'No especificada'}\n- Teléfono: ${medico.telefono || 'No especificado'}\n- Horarios de atención: ${horariosTexto}\n- Duración de consulta: ${medico.duracion_cita_min} minutos\n\nPAGOS:\n${medico.requiere_sena\n  ? `- Se requiere seña de $${medico.monto_sena}\\n- Alias MP: ${medico.alias_mp}\\n- CBU: ${medico.cbu}\\n- Titular: ${medico.titular_cuenta}`\n  : '- No se requiere seña para confirmar la cita'}\n\n${faqs ? `PREGUNTAS FRECUENTES:\\n${faqs}\\n` : ''}\nREGLAS CRÍTICAS DE OPERACIÓN:\n1. IDENTIFICACIÓN (obligatorio primero):\n   - Usá siempre la herramienta Buscar paciente con el celular del usuario.\n   - Si no existe, pedí nombre y apellido y usá Registrar paciente.\n   - NUNCA saltes al agendamiento sin confirmar el paciente_id.\n\n2. AGENDAMIENTO (solo después del paso 1):\n   - Horarios válidos: ${horariosTexto}\n   - Duración de turnos: ${medico.duracion_cita_min} minutos\n   - Necesitás: fecha (DD/MM/YYYY), hora (HH:mm) y motivo de consulta.\n   - Usá la herramienta Agendar cita solo cuando tengas todos los datos.\n   - Si el horario está ocupado, informá al paciente y ofrecé alternativas.\n\n3. INFORMACIÓN GENERAL:\n   - Respondé con las FAQs de arriba cuando pregunten por el consultorio.\n   - No inventes datos. Si no tenés la respuesta, decí que consultarás.\n\n4. PAGOS:\n${medico.requiere_sena\n  ? `   - Informá que se requiere una seña de $${medico.monto_sena} para confirmar.\\n   - Si elige transferencia, usá la herramienta Transferencia.`\n  : '   - No se requiere pago previo para confirmar la cita.'}\n\nTONO: ${config.tono || 'amigable'}. Confirmá siempre los datos antes de finalizar.`;\n\nconst webhookBody = $('Webhook Chat').first().json.body;\n\nreturn {\n  prompt,\n  medico_id: medico.id,\n  medico_nombre: medico.nombre_completo,\n  requiere_sena: medico.requiere_sena,\n  monto_sena: medico.monto_sena,\n  chat_id: webhookBody.chat_id,\n  message: webhookBody.message,\n  mensaje_bienvenida: config.mensaje_bienvenida || '¡Hola! ¿En qué puedo ayudarte?'\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-320, 160],
+      "id": "node-construir-prompt",
+      "name": "Construir prompt"
+    },
+    {
+      "parameters": {
+        "jsCode": "const now = $now.setZone('America/Argentina/Buenos_Aires');\nconst hour = now.hour;\nlet saludo;\nif (hour < 13) { saludo = 'Buen día'; }\nelse if (hour < 20) { saludo = 'Buenas tardes'; }\nelse { saludo = 'Buenas noches'; }\nreturn {\n  ...$input.first().json,\n  fecha_actual: now.toFormat('cccc dd/MM/yyyy HH:mm'),\n  saludo\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-80, 160],
+      "id": "node-calcular-fecha",
+      "name": "Calcular fecha"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message }}",
+        "options": {
+          "systemMessage": "={{ $json.prompt + '\\n\\nFECHA ACTUAL: ' + $json.fecha_actual + '. Usá siempre esta fecha como referencia para expresiones como \"mañana\", \"el lunes\", etc.' }}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [160, 160],
+      "id": "node-agente",
+      "name": "Agente Médico"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [-80, 384],
+      "id": "node-llm",
+      "name": "GPT-4o-mini",
+      "credentials": {
+        "openAiApi": {
+          "id": "PC4VGqko4NBRky7Y",
+          "name": "OpenAi"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Construir prompt').item.json.chat_id }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [32, 384],
+      "id": "node-memoria",
+      "name": "Memoria"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Buscá un paciente por número de celular. Devuelve los datos del paciente incluyendo su paciente_id si existe.",
+        "method": "GET",
+        "url": "={{ 'https://TU-PROYECTO.supabase.co/rest/v1/pacientes?medico_id=eq.' + $('Construir prompt').item.json.medico_id + '&celular=eq.' + $fromAI('celular', 'Número de celular del paciente', 'string') + '&limit=1' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "TU_SUPABASE_ANON_KEY" },
+            { "name": "Authorization", "value": "Bearer TU_SUPABASE_ANON_KEY" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [320, 384],
+      "id": "node-buscar-paciente",
+      "name": "Buscar paciente"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Registrá un paciente nuevo en el sistema. Usá solo después de confirmar que no existe con Buscar paciente. Requiere: nombre, apellido, celular.",
+        "method": "POST",
+        "url": "=https://TU-PROYECTO.supabase.co/rest/v1/pacientes",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "TU_SUPABASE_ANON_KEY" },
+            { "name": "Authorization", "value": "Bearer TU_SUPABASE_ANON_KEY" },
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Prefer", "value": "return=representation" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ medico_id: $('Construir prompt').item.json.medico_id, nombre: $fromAI('nombre', 'Nombre del paciente', 'string'), apellido: $fromAI('apellido', 'Apellido del paciente', 'string'), celular: $fromAI('celular', 'Celular del paciente', 'string') }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [448, 384],
+      "id": "node-registrar-paciente",
+      "name": "Registrar paciente"
+    },
+    {
+      "parameters": {
+        "description": "Verificá disponibilidad y agendá una cita médica. Requiere: nombre, apellido, celular, fecha (DD/MM/YYYY), hora (HH:mm), motivo de consulta, paciente_id.",
+        "workflowId": {
+          "__rl": true,
+          "value": "ID_DEL_WF05b_NUEVO",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "medico_id": "={{ $('Construir prompt').item.json.medico_id }}",
+            "chat_id": "={{ $('Construir prompt').item.json.chat_id }}",
+            "paciente_id": "={{ $fromAI('paciente_id', 'ID del paciente obtenido de Buscar o Registrar paciente', 'string') }}",
+            "nombre": "={{ $fromAI('nombre', 'Nombre del paciente', 'string') }}",
+            "apellido": "={{ $fromAI('apellido', 'Apellido del paciente', 'string') }}",
+            "celular": "={{ $fromAI('celular', 'Celular del paciente', 'string') }}",
+            "fecha": "={{ $fromAI('fecha', 'Fecha de la cita en formato DD/MM/YYYY', 'string') }}",
+            "hora": "={{ $fromAI('hora', 'Hora de la cita en formato HH:mm', 'string') }}",
+            "motivo": "={{ $fromAI('motivo', 'Motivo de la consulta', 'string') }}",
+            "monto": "={{ $('Construir prompt').item.json.monto_sena || 0 }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            { "id": "medico_id", "displayName": "medico_id", "required": true, "defaultMatch": false, "display": true, "canBeUsedToMatch": true, "type": "string" },
+            { "id": "chat_id", "displayName": "chat_id", "required": true, "defaultMatch": false, "display": true, "canBeUsedToMatch": true, "type": "string" },
+            { "id": "paciente_id", "displayName": "paciente_id", "required": true, "defaultMatch": false, "display": true, "canBeUsedToMatch": true, "type": "string" },
+            { "id": "nombre", "displayName": "nombre", "required": false, "defaultMatch": false, "display": true, "canBeUsedToMatch": true, "type": "string" },
+            { "id": "apellido", "displayName": "apellido", "required": false, "defaultMatch": false, "display": true, "canBeUsedToMatch": true, "type": "string" },
+            { "id": "celular", "displayName": "celular", "required": false, "defaultMatch": false, "display": true, "canBeUsedToMatch": true, "type": "string" },
+            { "id": "fecha", "displayName": "fecha", "required": true, "defaultMatch": false, "display": true, "canBeUsedToMatch": true, "type": "string" },
+            { "id": "hora", "displayName": "hora", "required": true, "defaultMatch": false, "display": true, "canBeUsedToMatch": true, "type": "string" },
+            { "id": "motivo", "displayName": "motivo", "required": false, "defaultMatch": false, "display": true, "canBeUsedToMatch": true, "type": "string" },
+            { "id": "monto", "displayName": "monto", "required": false, "defaultMatch": false, "display": true, "canBeUsedToMatch": true, "type": "string" }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [576, 384],
+      "id": "node-agendar-cita",
+      "name": "Agendar cita"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ response: $json.output, chat_id: $('Construir prompt').item.json.chat_id }) }}",
+        "options": { "responseCode": 200 }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [400, 160],
+      "id": "node-responder",
+      "name": "Responder al chat"
+    }
+  ],
+  "connections": {
+    "Webhook Chat": {
+      "main": [[{ "node": "Validar input", "type": "main", "index": 0 }]]
+    },
+    "Validar input": {
+      "main": [
+        [{ "node": "Cargar config médico", "type": "main", "index": 0 }],
+        [{ "node": "Error 400", "type": "main", "index": 0 }]
+      ]
+    },
+    "Cargar config médico": {
+      "main": [[{ "node": "Médico existe?", "type": "main", "index": 0 }]]
+    },
+    "Médico existe?": {
+      "main": [
+        [{ "node": "Construir prompt", "type": "main", "index": 0 }],
+        [{ "node": "Error 404", "type": "main", "index": 0 }]
+      ]
+    },
+    "Construir prompt": {
+      "main": [[{ "node": "Calcular fecha", "type": "main", "index": 0 }]]
+    },
+    "Calcular fecha": {
+      "main": [[{ "node": "Agente Médico", "type": "main", "index": 0 }]]
+    },
+    "Agente Médico": {
+      "main": [[{ "node": "Responder al chat", "type": "main", "index": 0 }]]
+    },
+    "GPT-4o-mini": {
+      "ai_languageModel": [[{ "node": "Agente Médico", "type": "ai_languageModel", "index": 0 }]]
+    },
+    "Memoria": {
+      "ai_memory": [[{ "node": "Agente Médico", "type": "ai_memory", "index": 0 }]]
+    },
+    "Buscar paciente": {
+      "ai_tool": [[{ "node": "Agente Médico", "type": "ai_tool", "index": 0 }]]
+    },
+    "Registrar paciente": {
+      "ai_tool": [[{ "node": "Agente Médico", "type": "ai_tool", "index": 0 }]]
+    },
+    "Agendar cita": {
+      "ai_tool": [[{ "node": "Agente Médico", "type": "ai_tool", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "instanceId": "e663904003f2676a92c20d36a5b372551af6e923584acdd42e8d70f0a89c4c5c"
+  },
+  "tags": []
+}
