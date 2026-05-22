@@ -89,9 +89,11 @@ export function usePushNotifications(pacienteId: string | null, medicoId: string
 }
 
 // ─── Helper: convertir clave VAPID de base64 a Uint8Array ────────────────────
-function urlBase64ToUint8Array(base64String: string): Uint8Array {
-  const padding  = '='.repeat((4 - (base64String.length % 4)) % 4)
-  const base64   = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
-  const rawData  = atob(base64)
-  return new Uint8Array([...rawData].map(char => char.charCodeAt(0)))
+function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
+  const base64  = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
+  const raw     = atob(base64)
+  const output  = new Uint8Array(raw.length)
+  for (let i = 0; i < raw.length; i++) output[i] = raw.charCodeAt(i)
+  return output
 }
