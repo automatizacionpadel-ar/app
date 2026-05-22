@@ -1,32 +1,27 @@
-// src/app/app/page.tsx
-// Página de entrada de la PWA para el paciente
-// URL: /app?m=MEDICO_ID
-// El médico comparte este link a sus pacientes
-
+// src/app/app/[slug]/page.tsx
 'use client'
 
-import { useEffect, useState, Suspense } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { MessageCircle, Bell, BellOff, Loader2 } from 'lucide-react'
 import { usePushNotifications } from '@/hooks/usePushNotifications'
 
 interface MedicoPublico {
-  id:             string
-  nombre_completo: string
-  especialidad:   string
+  id:                  string
+  slug:                string
+  nombre_completo:     string
+  especialidad:        string
   mensaje_bienvenida?: string
 }
 
-function AppContent() {
-  const params   = useSearchParams()
-  const router   = useRouter()
-  const medicoId = params.get('m')
+export default function AppPage({ params }: { params: { slug: string } }) {
+  const { slug }  = params
+  const router    = useRouter()
 
   const [medico, setMedico]   = useState<MedicoPublico | null>(null)
   const [loading, setLoading] = useState(true)
   const [chatId]              = useState(() => {
-    // Generar o recuperar chat_id persistente del dispositivo
     if (typeof window === 'undefined') return ''
     const stored = localStorage.getItem('simplificia_chat_id')
     if (stored) return stored
@@ -36,22 +31,19 @@ function AppContent() {
   })
 
   const { estado: pushEstado, solicitarPermiso } = usePushNotifications(
-    chatId || null,  // acá usamos chat_id como paciente_id temporal
-    medicoId
+    chatId || null,
+    medico?.id ?? null
   )
 
   useEffect(() => {
-    if (!medicoId) { setLoading(false); return }
-
-    fetch(`/api/medicos/publico?id=${medicoId}`)
+    fetch(`/api/medicos/publico?slug=${slug}`)
       .then(r => r.json())
-      .then(data => { setMedico(data); setLoading(false) })
+      .then(data => { setMedico(data.error ? null : data); setLoading(false) })
       .catch(() => setLoading(false))
-  }, [medicoId])
+  }, [slug])
 
   function irAlChat() {
-    if (!medicoId) return
-    router.push(`/app/chat?m=${medicoId}`)
+    router.push(`/app/${slug}/chat`)
   }
 
   if (loading) {
@@ -62,7 +54,7 @@ function AppContent() {
     )
   }
 
-  if (!medicoId || !medico) {
+  if (!medico) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
         <Image src="/logo.png" alt="SimplificIA" width={160} height={42} className="mb-6" />
@@ -76,10 +68,8 @@ function AppContent() {
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-6 text-center animate-fade-up">
 
-      {/* Logo */}
       <Image src="/logo.png" alt="SimplificIA" width={140} height={36} className="mb-8" />
 
-      {/* Info del médico */}
       <div className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold mb-4"
         style={{ background: 'rgba(122,182,25,0.15)', color: '#7AB619' }}>
         {medico.nombre_completo.charAt(0)}
@@ -98,10 +88,8 @@ function AppContent() {
         </p>
       )}
 
-      {/* Acciones */}
       <div className="w-full max-w-xs space-y-3">
 
-        {/* Ir al chat */}
         <button onClick={irAlChat}
           className="w-full flex items-center justify-center gap-2 rounded-xl py-4 text-sm font-semibold transition-all active:scale-[0.98]"
           style={{ background: '#7AB619', color: '#20201F' }}>
@@ -109,7 +97,6 @@ function AppContent() {
           Hablar con el asistente
         </button>
 
-        {/* Push notifications */}
         {pushEstado === 'idle' && (
           <button onClick={solicitarPermiso}
             className="w-full flex items-center justify-center gap-2 rounded-xl py-4 text-sm font-medium transition-all active:scale-[0.98]"
@@ -139,9 +126,7 @@ function AppContent() {
           <div className="w-full flex items-center justify-center gap-2 rounded-xl py-3"
             style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)' }}>
             <BellOff size={16} style={{ color: '#EF4444' }} />
-            <span className="text-sm" style={{ color: '#EF4444' }}>
-              Notificaciones bloqueadas
-            </span>
+            <span className="text-sm" style={{ color: '#EF4444' }}>Notificaciones bloqueadas</span>
           </div>
         )}
 
@@ -153,18 +138,9 @@ function AppContent() {
         )}
       </div>
 
-      {/* Instrucción instalar PWA */}
       <p className="text-xs mt-8" style={{ color: '#5C5C59' }}>
         💡 Instalá esta app en tu celular para acceder más rápido
       </p>
     </div>
-  )
-}
-
-export default function AppPage() {
-  return (
-    <Suspense fallback={null}>
-      <AppContent />
-    </Suspense>
   )
 }
