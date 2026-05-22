@@ -21,15 +21,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 })
     }
 
+    const trimmedTelefono = telefono.trim()
+    const trimmedNombre   = nombre.trim()
+
     const supabase = createAdminClient()
 
     // Fetch medico to get duracion
-    const { data: medico } = await supabase
+    const { data: medico, error: errMedico } = await supabase
       .from('medicos')
       .select('id, duracion_cita_min')
       .eq('id', medico_id)
       .single()
 
+    if (errMedico) {
+      if (errMedico.code === 'PGRST116') {
+        return NextResponse.json({ error: 'Médico no encontrado' }, { status: 404 })
+      }
+      return NextResponse.json({ error: 'Error al buscar médico' }, { status: 500 })
+    }
     if (!medico) {
       return NextResponse.json({ error: 'Médico no encontrado' }, { status: 404 })
     }
@@ -45,7 +54,7 @@ export async function POST(req: NextRequest) {
     const fechaFinISO    = fechaFin.toISOString()
 
     // Check for conflict
-    const { data: conflicto } = await supabase
+    const { data: conflicto, error: errConflicto } = await supabase
       .from('citas')
       .select('id')
       .eq('medico_id', medico_id)
@@ -55,6 +64,10 @@ export async function POST(req: NextRequest) {
       .limit(1)
       .maybeSingle()
 
+    if (errConflicto) {
+      return NextResponse.json({ error: 'Error al verificar disponibilidad' }, { status: 500 })
+    }
+
     if (conflicto) {
       return NextResponse.json({ error: 'Ese turno ya fue tomado' }, { status: 409 })
     }
@@ -63,7 +76,7 @@ export async function POST(req: NextRequest) {
     const { data: pacienteExistente } = await supabase
       .from('pacientes')
       .select('id')
-      .eq('telefono', telefono)
+      .eq('telefono', trimmedTelefono)
       .eq('medico_id', medico_id)
       .maybeSingle()
 
@@ -74,7 +87,7 @@ export async function POST(req: NextRequest) {
     } else {
       const { data: nuevoPaciente, error: errPaciente } = await supabase
         .from('pacientes')
-        .insert({ medico_id, nombre: nombre.trim(), telefono: telefono.trim() })
+        .insert({ medico_id, nombre: trimmedNombre, telefono: trimmedTelefono })
         .select('id')
         .single()
 
