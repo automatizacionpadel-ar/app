@@ -2,16 +2,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import { addDays, parseISO, addMinutes, getDay } from 'date-fns'
-import { formatInTimeZone, toZonedTime } from 'date-fns-tz'
+import { formatInTimeZone, toZonedTime, fromZonedTime } from 'date-fns-tz'
+import type { Horarios } from '@/types'
 
 export const dynamic = 'force-dynamic'
 
-const WEEKDAY_MAP: Record<string, number> = {
-  lunes: 1, martes: 2, miercoles: 3, jueves: 4,
-  viernes: 5, sabado: 6, domingo: 0,
+const TZ = 'America/Argentina/Buenos_Aires'
+
+const DAY_NUM_TO_KEY: Record<number, keyof Horarios> = {
+  0: 'domingo', 1: 'lunes', 2: 'martes', 3: 'miercoles',
+  4: 'jueves', 5: 'viernes', 6: 'sabado',
 }
 
-const TZ = 'America/Argentina/Buenos_Aires'
+const DIAS_ES = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb']
 
 export async function GET(req: NextRequest) {
   const medicoId = req.nextUrl.searchParams.get('medico_id')
@@ -32,8 +35,7 @@ export async function GET(req: NextRequest) {
   }
 
   const duracion: number = medico.duracion_cita_min ?? 30
-  const horarios: Record<string, { activo: boolean; inicio: string; fin: string }> =
-    medico.horarios ?? {}
+  const horarios = (medico.horarios ?? {}) as Partial<Horarios>
 
   // Fetch existing citas for the next 14 days
   const hoy     = toZonedTime(new Date(), TZ)
@@ -55,29 +57,20 @@ export async function GET(req: NextRequest) {
 
   const result: Array<{ fecha: string; label: string; slots: string[] }> = []
 
-  const DIAS_ES = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb']
-
   for (let i = 0; i < 14; i++) {
     const dia      = addDays(hoy, i)
     const jsDay    = getDay(dia)
     const fechaStr = formatInTimeZone(dia, TZ, 'yyyy-MM-dd')
 
-    // Find which horario key matches this weekday
-    const diaKey = Object.keys(WEEKDAY_MAP).find(k => WEEKDAY_MAP[k] === jsDay)
+    const diaKey = DAY_NUM_TO_KEY[jsDay]
     if (!diaKey) continue
 
     const config = horarios[diaKey]
     if (!config?.activo) continue
 
-    // Generate all slots for this day
-    const [hIni, mIni] = config.inicio.split(':').map(Number)
-    const [hFin, mFin] = config.fin.split(':').map(Number)
-
-    const slotBase = toZonedTime(parseISO(`${fechaStr}T00:00:00`), TZ)
-    slotBase.setHours(hIni, mIni, 0, 0)
-
-    const endBase = toZonedTime(parseISO(`${fechaStr}T00:00:00`), TZ)
-    endBase.setHours(hFin, mFin, 0, 0)
+    // Build slot boundaries correctly in the target timezone
+    const slotBase = fromZonedTime(`${fechaStr}T${config.inicio}:00`, TZ)
+    const endBase  = fromZonedTime(`${fechaStr}T${config.fin}:00`, TZ)
 
     const slots: string[] = []
     let cursor = new Date(slotBase)
@@ -85,6 +78,12 @@ export async function GET(req: NextRequest) {
     while (cursor < endBase) {
       const slotFin = addMinutes(cursor, duracion)
       if (slotFin > endBase) break
+
+      // Skip past slots (only relevant for today, i === 0)
+      if (cursor <= new Date()) {
+        cursor = addMinutes(cursor, duracion)
+        continue
+      }
 
       // Check overlap with existing citas
       const ocupado = ocupados.some(c => cursor < c.fin && slotFin > c.inicio)
