@@ -1,6 +1,25 @@
 // src/app/api/medicos/crear/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
+import { slugify } from '@/lib/slugify'
+
+async function generateUniqueSlug(
+  supabase: ReturnType<typeof createAdminClient>,
+  nombre: string
+): Promise<string> {
+  const base = slugify(nombre) || 'medico'
+  let candidate = base
+  let i = 2
+  while (true) {
+    const { data } = await supabase
+      .from('medicos')
+      .select('id')
+      .eq('slug', candidate)
+      .maybeSingle()
+    if (!data) return candidate
+    candidate = `${base}-${i++}`
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -37,6 +56,15 @@ export async function POST(req: NextRequest) {
 
     const userId = authData.user.id
 
+    // Generate unique slug from nombre_completo
+    let slug: string
+    try {
+      slug = await generateUniqueSlug(supabase, nombre_completo)
+    } catch {
+      await supabase.auth.admin.deleteUser(userId)
+      return NextResponse.json({ error: 'Error al generar el identificador' }, { status: 500 })
+    }
+
     // 2. Registrar en tabla usuarios con rol 'medico'
     const { error: usuarioError } = await supabase
       .from('usuarios')
@@ -53,6 +81,7 @@ export async function POST(req: NextRequest) {
       .from('medicos')
       .insert({
         usuario_id: userId,
+        slug,
         nombre_completo,
         especialidad,
         telefono:           telefono || null,
@@ -114,6 +143,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       ok: true,
       medico_id:     medico.id,
+      slug:          medico.slug,
       webhook_token: medico.webhook_token,
     })
   } catch (error) {
