@@ -21,7 +21,7 @@ export default function LoginPage() {
     setError(null)
 
     const supabase = createClient()
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { data: authData, error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
       setError('Email o contraseña incorrectos.')
@@ -29,7 +29,13 @@ export default function LoginPage() {
       return
     }
 
-    router.push('/dashboard')
+    const { data: usuario } = await supabase
+      .from('usuarios')
+      .select('rol')
+      .eq('id', authData.user.id)
+      .single()
+
+    router.push(usuario?.rol === 'superadmin' ? '/admin' : '/dashboard')
     router.refresh()
   }
 

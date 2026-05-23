@@ -2,8 +2,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Calendar, Users, CheckCircle, Clock } from 'lucide-react'
-import { format, startOfDay, endOfDay, startOfMonth, endOfMonth } from 'date-fns'
+import { format, startOfMonth, endOfMonth } from 'date-fns'
 import { es } from 'date-fns/locale'
+import CalendarioCliente from './calendario/CalendarioCliente'
 
 // ─── Stat Card ───────────────────────────────────────────────────────────────
 function StatCard({ titulo, valor, subtitulo, icon, color }: {
@@ -25,58 +26,6 @@ function StatCard({ titulo, valor, subtitulo, icon, color }: {
   )
 }
 
-// ─── Próximas citas ───────────────────────────────────────────────────────────
-function ProximasCitas({ citas }: { citas: any[] }) {
-  const estadoColor: Record<string, string> = {
-    pendiente:  '#F59E0B',
-    confirmada: '#7AB619',
-    cancelada:  '#EF4444',
-    completada: '#5C5C59',
-    no_asistio: '#8B5CF6',
-  }
-
-  if (citas.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12">
-        <Calendar size={40} style={{ color: '#3D3D3B' }} className="mb-3" />
-        <p className="text-sm" style={{ color: '#5C5C59' }}>No hay citas para hoy</p>
-      </div>
-    )
-  }
-
-  return (
-    <div className="space-y-2">
-      {citas.map(cita => {
-        const hora = format(new Date(cita.fecha_inicio), 'HH:mm')
-        const paciente = cita.pacientes
-        const nombre = paciente ? `${paciente.nombre} ${paciente.apellido ?? ''}`.trim() : 'Paciente'
-
-        return (
-          <div key={cita.id}
-            className="flex items-center gap-3 rounded-lg px-4 py-3 transition-colors"
-            style={{ background: '#20201F', border: '1px solid #3D3D3B' }}>
-            <div className="text-sm font-mono font-semibold w-12 flex-shrink-0"
-              style={{ color: '#7AB619' }}>{hora}</div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate" style={{ color: '#F0F0EE' }}>{nombre}</p>
-              <p className="text-xs truncate" style={{ color: '#5C5C59' }}>
-                {cita.motivo_consulta ?? 'Sin motivo especificado'}
-              </p>
-            </div>
-            <span className="text-xs rounded-full px-2.5 py-1 font-medium flex-shrink-0"
-              style={{
-                background: `${estadoColor[cita.estado]}18`,
-                color: estadoColor[cita.estado]
-              }}>
-              {cita.estado}
-            </span>
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default async function DashboardPage() {
   const supabase = createClient()
@@ -94,25 +43,23 @@ export default async function DashboardPage() {
   }
 
   const ahora    = new Date()
-  const hoyStart = startOfDay(ahora).toISOString()
-  const hoyEnd   = endOfDay(ahora).toISOString()
   const mesStart = startOfMonth(ahora).toISOString()
   const mesEnd   = endOfMonth(ahora).toISOString()
+  const calStart = new Date(ahora.getFullYear(), ahora.getMonth(), 1).toISOString()
+  const calEnd   = new Date(ahora.getFullYear(), ahora.getMonth() + 2, 0).toISOString()
 
-  // Base query filter
-  const filtro = medicoId ? { medico_id: medicoId } : {}
-
-  // Stats en paralelo
+  // Stats + citas para el calendario en paralelo
   const [
     { count: citasHoy },
     { count: citasMes },
     { count: pacientesTotal },
     { count: citasPendientes },
-    { data: proximasCitas },
+    { data: citasCalendario },
   ] = await Promise.all([
     supabase.from('citas').select('*', { count: 'exact', head: true })
       .eq('medico_id', medicoId ?? '')
-      .gte('fecha_inicio', hoyStart).lte('fecha_inicio', hoyEnd),
+      .gte('fecha_inicio', new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate()).toISOString())
+      .lt('fecha_inicio', new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() + 1).toISOString()),
 
     supabase.from('citas').select('*', { count: 'exact', head: true })
       .eq('medico_id', medicoId ?? '')
@@ -126,11 +73,11 @@ export default async function DashboardPage() {
       .eq('estado', 'pendiente'),
 
     supabase.from('citas')
-      .select('id, fecha_inicio, estado, motivo_consulta, pacientes(nombre, apellido)')
+      .select('id, fecha_inicio, fecha_fin, estado, motivo_consulta, pacientes(nombre, apellido)')
       .eq('medico_id', medicoId ?? '')
-      .gte('fecha_inicio', hoyStart).lte('fecha_inicio', hoyEnd)
-      .order('fecha_inicio', { ascending: true })
-      .limit(10),
+      .gte('fecha_inicio', calStart)
+      .lte('fecha_inicio', calEnd)
+      .order('fecha_inicio', { ascending: true }),
   ])
 
   const fechaHoy = format(ahora, "EEEE d 'de' MMMM", { locale: es })
@@ -180,21 +127,8 @@ export default async function DashboardPage() {
         />
       </div>
 
-      {/* Próximas citas del día */}
-      <div className="rounded-xl p-6"
-        style={{ background: '#2A2A29', border: '1px solid #3D3D3B' }}>
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-base font-semibold" style={{ color: '#F0F0EE' }}>
-            Citas de hoy
-          </h2>
-          <a href="/dashboard/calendario"
-            className="text-xs font-medium transition-colors hover:opacity-75"
-            style={{ color: '#7AB619' }}>
-            Ver calendario →
-          </a>
-        </div>
-        <ProximasCitas citas={proximasCitas ?? []} />
-      </div>
+      {/* Calendario */}
+      <CalendarioCliente citasIniciales={citasCalendario ?? []} medicoId={medicoId} />
     </div>
   )
 }
