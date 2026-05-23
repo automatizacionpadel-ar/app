@@ -89,10 +89,17 @@ function ImageUpload({ label, hint, value, storagePath, onUploaded, shape }: {
 }) {
   const inputRef   = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+    if (file.size > 2 * 1024 * 1024) {
+      setUploadError('La imagen no puede superar los 2MB.')
+      if (inputRef.current) inputRef.current.value = ''
+      return
+    }
+    setUploadError(null)
     setUploading(true)
     try {
       const supabase = createClient()
@@ -104,8 +111,8 @@ function ImageUpload({ label, hint, value, storagePath, onUploaded, shape }: {
         .from('medico-fotos')
         .getPublicUrl(storagePath)
       onUploaded(`${publicUrl}?t=${Date.now()}`)
-    } catch (err) {
-      console.error('Error subiendo imagen:', err)
+    } catch {
+      setUploadError('Error al subir la imagen. Intentá de nuevo.')
     } finally {
       setUploading(false)
       if (inputRef.current) inputRef.current.value = ''
@@ -137,6 +144,9 @@ function ImageUpload({ label, hint, value, storagePath, onUploaded, shape }: {
           style={{ background: '#3D3D3B', color: '#9A9A96' }}>
           {uploading ? 'Subiendo...' : 'Subir imagen'}
         </button>
+        {uploadError && (
+          <p className="text-xs mt-1" style={{ color: '#EF4444' }}>{uploadError}</p>
+        )}
         <p className="text-xs mt-1" style={{ color: '#5C5C59' }}>{hint}</p>
       </div>
       <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp"
@@ -148,25 +158,23 @@ function ImageUpload({ label, hint, value, storagePath, onUploaded, shape }: {
 // ─── Componente principal ─────────────────────────────────────────────────────
 
 export default function ConfigCliente({ medico }: { medico: Medico }) {
-  const defaultHorarios = Object.fromEntries(
-    DIAS.map(d => [
-      d,
-      medico.horarios?.[d] ?? { inicio: '09:00', fin: '18:00', activo: d !== 'domingo' },
-    ])
-  ) as Record<Dia, HorarioDia>
-
-  const [form, setForm] = useState({
+  const [form, setForm] = useState(() => ({
     nombre_completo:      medico.nombre_completo,
     telefono:             medico.telefono             ?? '',
     direccion:            medico.direccion            ?? '',
     foto_perfil_url:      medico.foto_perfil_url      as string | null,
     logo_url:             medico.logo_url             as string | null,
-    horarios:             defaultHorarios,
+    horarios:             Object.fromEntries(
+      DIAS.map(d => [
+        d,
+        medico.horarios?.[d] ?? { inicio: '09:00', fin: '18:00', activo: d !== 'domingo' },
+      ])
+    ) as Record<Dia, HorarioDia>,
     precio_consulta:      medico.precio_consulta      != null ? String(medico.precio_consulta) : '',
     requiere_sena:        medico.requiere_sena,
     monto_sena:           medico.monto_sena           != null ? String(medico.monto_sena) : '',
     acepta_agendamientos: medico.acepta_agendamientos,
-  })
+  }))
 
   const [loading, setLoading] = useState(false)
   const [exito,   setExito]   = useState(false)
@@ -190,6 +198,25 @@ export default function ConfigCliente({ medico }: { medico: Medico }) {
     setLoading(true)
     setError(null)
     setExito(false)
+
+    // Validate required field
+    if (!form.nombre_completo.trim()) {
+      setError('El nombre completo es requerido.')
+      setLoading(false)
+      return
+    }
+
+    // Validate schedule times
+    const scheduleInvalid = DIAS.some(dia => {
+      const h = form.horarios[dia]
+      return h.activo && h.fin <= h.inicio
+    })
+    if (scheduleInvalid) {
+      setError('El horario de cierre debe ser posterior al de apertura en todos los días activos.')
+      setLoading(false)
+      return
+    }
+
     try {
       const res = await fetch('/api/medicos/actualizar', {
         method:  'PATCH',
