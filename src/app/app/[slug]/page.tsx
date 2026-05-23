@@ -57,7 +57,7 @@ export default function AppPage({ params }: { params: { slug: string } }) {
   if (!medico) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-        <Image src="/logo.png" alt="SimplificIA" width={160} height={42} className="mb-6" />
+        <Image src="/logo.png" alt="SimplificIA" width={200} height={53} className="mb-6" style={{ mixBlendMode: 'screen' }} />
         <p className="text-sm" style={{ color: '#5C5C59' }}>
           Link inválido. Pedile al consultorio el link correcto.
         </p>
@@ -68,7 +68,7 @@ export default function AppPage({ params }: { params: { slug: string } }) {
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-6 text-center animate-fade-up">
 
-      <Image src="/logo.png" alt="SimplificIA" width={140} height={36} className="mb-8" />
+      <Image src="/logo.png" alt="SimplificIA" width={175} height={45} className="mb-8" style={{ mixBlendMode: 'screen' }} />
 
       <div className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold mb-4"
         style={{ background: 'rgba(122,182,25,0.15)', color: '#7AB619' }}>

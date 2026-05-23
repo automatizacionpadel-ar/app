@@ -175,6 +175,8 @@ export default function ConfigCliente({ medico }: { medico: Medico }) {
     precio_consulta:      medico.precio_consulta      != null ? String(medico.precio_consulta) : '',
     requiere_sena:        medico.requiere_sena,
     monto_sena:           medico.monto_sena           != null ? String(medico.monto_sena) : '',
+    cbu:                  medico.cbu                  ?? '',
+    alias_mp:             medico.alias_mp             ?? '',
     acepta_agendamientos: medico.acepta_agendamientos,
   }))
 
@@ -237,6 +239,8 @@ export default function ConfigCliente({ medico }: { medico: Medico }) {
           monto_sena:           form.requiere_sena && form.monto_sena
                                   ? parseFloat(form.monto_sena)
                                   : null,
+          cbu:                  form.cbu     || null,
+          alias_mp:             form.alias_mp || null,
           acepta_agendamientos: form.acepta_agendamientos,
         }),
       })
@@ -398,6 +402,31 @@ export default function ConfigCliente({ medico }: { medico: Medico }) {
                 </div>
               </Campo>
             )}
+          </div>
+
+          <div className="rounded-xl p-4" style={{ background: '#20201F' }}>
+            <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: '#5C5C59' }}>
+              Datos bancarios para transferencias
+            </p>
+            <div className="flex flex-col gap-3">
+              <Campo label="CBU">
+                <Input
+                  type="text"
+                  value={form.cbu}
+                  onChange={e => setField('cbu', e.target.value)}
+                  placeholder="0000000000000000000000"
+                  maxLength={22}
+                />
+              </Campo>
+              <Campo label="Alias">
+                <Input
+                  type="text"
+                  value={form.alias_mp}
+                  onChange={e => setField('alias_mp', e.target.value)}
+                  placeholder="nombre.apellido.banco"
+                />
+              </Campo>
+            </div>
           </div>
 
           <div className="rounded-xl p-4 flex items-center justify-between"

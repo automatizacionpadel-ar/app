@@ -9,9 +9,9 @@ const N8N_BASE_URL = process.env.N8N_WEBHOOK_URL ?? 'https://n8n.simplificia.com
 
 export async function POST(req: NextRequest) {
   try {
-    const { medico_id, chat_id, message } = await req.json()
+    const { medico_id, chat_id, message, image_url } = await req.json()
 
-    if (!medico_id || !chat_id || !message?.trim()) {
+    if (!medico_id || !chat_id || (!message?.trim() && !image_url)) {
       return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 })
     }
 
@@ -28,6 +28,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Médico no encontrado o inactivo' }, { status: 404 })
     }
 
+    // Armar mensaje final (texto + imagen si hay)
+    const mensajeFinal = [
+      message?.trim() ?? '',
+      image_url ? `[Imagen adjunta: ${image_url}]` : '',
+    ].filter(Boolean).join('\n')
+
     // Reenviar a n8n con el token
     const n8nResponse = await fetch(N8N_BASE_URL, {
       method:  'POST',
@@ -35,7 +41,7 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         webhook_token: medico.webhook_token,
         chat_id,
-        message: message.trim(),
+        message: mensajeFinal,
       }),
     })
 

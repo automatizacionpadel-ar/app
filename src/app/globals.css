@@ -70,6 +70,11 @@ body {
   outline-offset: 2px;
 }
 
+/* Textarea dentro del chat: quitar outline propio, el contenedor maneja el foco */
+textarea:focus-visible {
+  outline: none;
+}
+
 /* ─── Selección de texto ─────────────────────────────────────── */
 ::selection {
   background: rgba(var(--color-brand-rgb), 0.3);

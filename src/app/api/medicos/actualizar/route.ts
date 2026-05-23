@@ -24,6 +24,7 @@ export async function PATCH(req: NextRequest) {
       foto_perfil_url, logo_url, sello_url, firma_url,
       horarios,
       precio_consulta, requiere_sena, monto_sena,
+      cbu, alias_mp,
       acepta_agendamientos,
     } = body
 
@@ -45,6 +46,8 @@ export async function PATCH(req: NextRequest) {
         monto_sena:           requiere_sena && monto_sena != null
                                 ? (isNaN(parseFloat(String(monto_sena))) ? null : parseFloat(String(monto_sena)))
                                 : null,
+        cbu:                  cbu             || null,
+        alias_mp:             alias_mp        || null,
         acepta_agendamientos: acepta_agendamientos ?? undefined,
       })
       .eq('id', medico.id)
