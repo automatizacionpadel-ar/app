@@ -141,6 +141,20 @@ export interface PushSubscription {
   last_used_at: string | null
 }
 
+// ─── Suscripciones ────────────────────────────────────────────────────────────
+
+export interface Suscripcion {
+  id:             string
+  medico_id:      string
+  monto:          number
+  fecha_pago:     string
+  periodo_inicio: string
+  periodo_fin:    string
+  estado:         'pagado' | 'pendiente' | 'vencido'
+  notas:          string | null
+  created_at:     string
+}
+
 // ─── Campañas ─────────────────────────────────────────────────────────────────
 
 export interface MensajePromo {

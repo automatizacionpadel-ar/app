@@ -14,19 +14,20 @@ import {
 } from 'lucide-react'
 
 interface NavItem {
-  label: string
-  href:  string
-  icon:  React.ReactNode
-  adminOnly?: boolean
+  label:       string
+  href:        string
+  icon:        React.ReactNode
+  adminOnly?:  boolean
+  clienteOnly?: boolean
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Dashboard',  href: '/dashboard',          icon: <LayoutDashboard size={18} /> },
-  { label: 'Calendario', href: '/dashboard/calendario', icon: <Calendar size={18} /> },
-  { label: 'Pacientes',  href: '/dashboard/pacientes',  icon: <Users size={18} /> },
-  { label: 'Campañas',   href: '/dashboard/campanias',  icon: <Megaphone size={18} /> },
-  { label: 'Médicos',    href: '/admin/medicos',         icon: <Stethoscope size={18} />, adminOnly: true },
-  { label: 'Configuración', href: '/dashboard/config',  icon: <Settings size={18} /> },
+  { label: 'Dashboard',     href: '/dashboard',           icon: <LayoutDashboard size={18} /> },
+  { label: 'Calendario',    href: '/dashboard/calendario', icon: <Calendar size={18} />,    clienteOnly: true },
+  { label: 'Pacientes',     href: '/dashboard/pacientes',  icon: <Users size={18} />,       clienteOnly: true },
+  { label: 'Campañas',      href: '/dashboard/campanias',  icon: <Megaphone size={18} />,   clienteOnly: true },
+  { label: 'Médicos',       href: '/admin/medicos',         icon: <Stethoscope size={18} />, adminOnly: true },
+  { label: 'Configuración', href: '/dashboard/config',     icon: <Settings size={18} /> },
 ]
 
 interface SidebarProps {
@@ -46,7 +47,15 @@ export default function Sidebar({ rol, nombreMedico }: SidebarProps) {
     router.refresh()
   }
 
-  const items = NAV_ITEMS.filter(item => !item.adminOnly || rol === 'superadmin')
+  const isAdmin = rol === 'superadmin'
+  const items = NAV_ITEMS
+    .filter(item => !item.adminOnly || isAdmin)
+    .filter(item => !item.clienteOnly || !isAdmin)
+    .map(item =>
+      item.href === '/dashboard' && isAdmin
+        ? { ...item, href: '/admin' }
+        : item
+    )
 
   return (
     <aside
@@ -92,8 +101,9 @@ export default function Sidebar({ rol, nombreMedico }: SidebarProps) {
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
         {items.map(item => {
+          const dashboardRoot = item.href === '/dashboard' || item.href === '/admin'
           const active = pathname === item.href ||
-            (item.href !== '/dashboard' && pathname.startsWith(item.href))
+            (!dashboardRoot && pathname.startsWith(item.href))
 
           return (
             <Link

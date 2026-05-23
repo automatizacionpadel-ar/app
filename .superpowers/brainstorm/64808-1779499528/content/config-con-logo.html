@@ -1,0 +1,67 @@
+<h2>Foto de perfil + Logo — ¿cómo los mostramos?</h2>
+<p class="subtitle">Dentro de la sección "Información Personal"</p>
+
+<div class="cards">
+
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#2A2A29;border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px;">
+        <div style="font-size:10px;color:#5C5C59;text-transform:uppercase;letter-spacing:1px;">Información Personal</div>
+        <!-- Fila con los dos uploads lado a lado -->
+        <div style="display:flex;gap:12px;">
+          <div style="flex:1;background:#20201F;border-radius:8px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:8px;">
+            <div style="width:52px;height:52px;border-radius:50%;background:#3D3D3B;border:2px dashed #5C5C59;display:flex;align-items:center;justify-content:center;font-size:20px;">👤</div>
+            <div style="font-size:10px;color:#F0F0EE;font-weight:500;">Foto de perfil</div>
+            <div style="background:#3D3D3B;border-radius:5px;padding:4px 10px;font-size:9px;color:#9A9A96;">Subir</div>
+          </div>
+          <div style="flex:1;background:#20201F;border-radius:8px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:8px;">
+            <div style="width:52px;height:52px;border-radius:8px;background:#3D3D3B;border:2px dashed #5C5C59;display:flex;align-items:center;justify-content:center;font-size:20px;">🏥</div>
+            <div style="font-size:10px;color:#F0F0EE;font-weight:500;">Logo</div>
+            <div style="background:#3D3D3B;border-radius:5px;padding:4px 10px;font-size:9px;color:#9A9A96;">Subir</div>
+          </div>
+        </div>
+        <!-- Resto de campos -->
+        <div style="background:#20201F;border-radius:6px;height:24px;"></div>
+        <div style="background:#20201F;border-radius:6px;height:24px;"></div>
+        <div style="background:#20201F;border-radius:6px;height:24px;"></div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Lado a lado</h3>
+      <p>Foto de perfil y logo en dos columnas al tope de la sección. La foto es circular (avatar), el logo es cuadrado/redondeado.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#2A2A29;border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px;">
+        <div style="font-size:10px;color:#5C5C59;text-transform:uppercase;letter-spacing:1px;">Información Personal</div>
+        <!-- Foto primero -->
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="width:48px;height:48px;border-radius:50%;background:#3D3D3B;border:2px dashed #5C5C59;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">👤</div>
+          <div style="flex:1;">
+            <div style="font-size:10px;color:#F0F0EE;font-weight:500;margin-bottom:3px;">Foto de perfil</div>
+            <div style="background:#3D3D3B;border-radius:5px;padding:4px 10px;display:inline-block;font-size:9px;color:#9A9A96;">Subir imagen</div>
+          </div>
+        </div>
+        <!-- Logo después -->
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="width:48px;height:48px;border-radius:8px;background:#3D3D3B;border:2px dashed #5C5C59;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🏥</div>
+          <div style="flex:1;">
+            <div style="font-size:10px;color:#F0F0EE;font-weight:500;margin-bottom:3px;">Logo del consultorio</div>
+            <div style="background:#3D3D3B;border-radius:5px;padding:4px 10px;display:inline-block;font-size:9px;color:#9A9A96;">Subir imagen</div>
+          </div>
+        </div>
+        <!-- Resto de campos -->
+        <div style="background:#20201F;border-radius:6px;height:24px;"></div>
+        <div style="background:#20201F;border-radius:6px;height:24px;"></div>
+        <div style="background:#20201F;border-radius:6px;height:24px;"></div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Apilados</h3>
+      <p>Foto de perfil y logo uno debajo del otro, igual que el resto de campos. Más compacto.</p>
+    </div>
+  </div>
+
+</div>

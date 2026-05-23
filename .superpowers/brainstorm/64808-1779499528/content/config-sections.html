@@ -1,0 +1,162 @@
+<h2>Contenido de cada sección</h2>
+<p class="subtitle">¿Los campos y controles de cada sección están bien así?</p>
+
+<div style="display:flex;flex-direction:column;gap:16px;max-width:680px;margin:0 auto;">
+
+  <!-- Sección 1: Información Personal -->
+  <div style="background:#2A2A29;border:1px solid #3D3D3B;border-radius:12px;overflow:hidden;">
+    <div style="padding:16px 20px;border-bottom:1px solid #3D3D3B;display:flex;align-items:center;gap:10px;">
+      <div style="width:32px;height:32px;border-radius:8px;background:rgba(122,182,25,0.12);display:flex;align-items:center;justify-content:center;font-size:15px;">👤</div>
+      <div>
+        <div style="color:#F0F0EE;font-size:13px;font-weight:600;">Información Personal</div>
+        <div style="color:#5C5C59;font-size:11px;">Tu nombre y datos de contacto</div>
+      </div>
+    </div>
+    <div style="padding:20px;display:flex;flex-direction:column;gap:14px;">
+
+      <!-- Foto de perfil -->
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div style="width:64px;height:64px;border-radius:50%;background:#3D3D3B;border:2px dashed #5C5C59;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">👤</div>
+        <div>
+          <div style="color:#F0F0EE;font-size:12px;font-weight:500;margin-bottom:4px;">Foto de perfil</div>
+          <div style="background:#3D3D3B;border-radius:6px;padding:5px 12px;display:inline-block;font-size:11px;color:#9A9A96;cursor:pointer;">Subir imagen</div>
+          <div style="color:#5C5C59;font-size:10px;margin-top:3px;">JPG o PNG, máx. 2MB</div>
+        </div>
+      </div>
+
+      <!-- Nombre -->
+      <div>
+        <div style="color:#9A9A96;font-size:11px;margin-bottom:5px;">Nombre completo</div>
+        <div style="background:#20201F;border:1px solid #3D3D3B;border-radius:8px;padding:10px 12px;color:#F0F0EE;font-size:12px;">Dr. Martín García</div>
+      </div>
+
+      <!-- Celular -->
+      <div>
+        <div style="color:#9A9A96;font-size:11px;margin-bottom:5px;">Celular</div>
+        <div style="background:#20201F;border:1px solid #3D3D3B;border-radius:8px;padding:10px 12px;color:#F0F0EE;font-size:12px;">+54 9 11 5555-0000</div>
+      </div>
+
+      <!-- Dirección -->
+      <div>
+        <div style="color:#9A9A96;font-size:11px;margin-bottom:5px;">Dirección del consultorio</div>
+        <div style="background:#20201F;border:1px solid #3D3D3B;border-radius:8px;padding:10px 12px;color:#F0F0EE;font-size:12px;">Av. Corrientes 1234, CABA</div>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;padding-top:4px;">
+        <div style="background:#7AB619;border-radius:8px;padding:8px 18px;font-size:12px;color:#fff;font-weight:600;cursor:pointer;">Guardar cambios</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sección 2: Horarios de Atención -->
+  <div style="background:#2A2A29;border:1px solid #3D3D3B;border-radius:12px;overflow:hidden;">
+    <div style="padding:16px 20px;border-bottom:1px solid #3D3D3B;display:flex;align-items:center;gap:10px;">
+      <div style="width:32px;height:32px;border-radius:8px;background:rgba(59,130,246,0.12);display:flex;align-items:center;justify-content:center;font-size:15px;">📅</div>
+      <div>
+        <div style="color:#F0F0EE;font-size:13px;font-weight:600;">Horarios de Atención</div>
+        <div style="color:#5C5C59;font-size:11px;">Días y horas en que recibís pacientes</div>
+      </div>
+    </div>
+    <div style="padding:20px;display:flex;flex-direction:column;gap:10px;">
+      <!-- Días de la semana -->
+      <div style="display:flex;gap:8px;margin-bottom:4px;">
+        <div style="background:#7AB619;border-radius:6px;padding:5px 10px;font-size:11px;color:#fff;font-weight:600;">L</div>
+        <div style="background:#7AB619;border-radius:6px;padding:5px 10px;font-size:11px;color:#fff;font-weight:600;">M</div>
+        <div style="background:#3D3D3B;border-radius:6px;padding:5px 10px;font-size:11px;color:#5C5C59;">Mi</div>
+        <div style="background:#7AB619;border-radius:6px;padding:5px 10px;font-size:11px;color:#fff;font-weight:600;">J</div>
+        <div style="background:#7AB619;border-radius:6px;padding:5px 10px;font-size:11px;color:#fff;font-weight:600;">V</div>
+        <div style="background:#3D3D3B;border-radius:6px;padding:5px 10px;font-size:11px;color:#5C5C59;">S</div>
+        <div style="background:#3D3D3B;border-radius:6px;padding:5px 10px;font-size:11px;color:#5C5C59;">D</div>
+      </div>
+      <!-- Filas de días activos -->
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="color:#F0F0EE;font-size:11px;width:48px;">Lunes</div>
+          <div style="background:#20201F;border:1px solid #3D3D3B;border-radius:6px;padding:6px 10px;font-size:11px;color:#9A9A96;width:60px;">09:00</div>
+          <div style="color:#5C5C59;font-size:11px;">a</div>
+          <div style="background:#20201F;border:1px solid #3D3D3B;border-radius:6px;padding:6px 10px;font-size:11px;color:#9A9A96;width:60px;">18:00</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="color:#F0F0EE;font-size:11px;width:48px;">Martes</div>
+          <div style="background:#20201F;border:1px solid #3D3D3B;border-radius:6px;padding:6px 10px;font-size:11px;color:#9A9A96;width:60px;">09:00</div>
+          <div style="color:#5C5C59;font-size:11px;">a</div>
+          <div style="background:#20201F;border:1px solid #3D3D3B;border-radius:6px;padding:6px 10px;font-size:11px;color:#9A9A96;width:60px;">18:00</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="color:#5C5C59;font-size:11px;width:48px;">Miérc.</div>
+          <div style="color:#3D3D3B;font-size:10px;font-style:italic;">Descanso</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="color:#F0F0EE;font-size:11px;width:48px;">Jueves</div>
+          <div style="background:#20201F;border:1px solid #3D3D3B;border-radius:6px;padding:6px 10px;font-size:11px;color:#9A9A96;width:60px;">09:00</div>
+          <div style="color:#5C5C59;font-size:11px;">a</div>
+          <div style="background:#20201F;border:1px solid #3D3D3B;border-radius:6px;padding:6px 10px;font-size:11px;color:#9A9A96;width:60px;">17:00</div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;padding-top:4px;">
+        <div style="background:#7AB619;border-radius:8px;padding:8px 18px;font-size:12px;color:#fff;font-weight:600;cursor:pointer;">Guardar cambios</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sección 3: Propiedades de Citas -->
+  <div style="background:#2A2A29;border:1px solid #3D3D3B;border-radius:12px;overflow:hidden;">
+    <div style="padding:16px 20px;border-bottom:1px solid #3D3D3B;display:flex;align-items:center;gap:10px;">
+      <div style="width:32px;height:32px;border-radius:8px;background:rgba(245,158,11,0.12);display:flex;align-items:center;justify-content:center;font-size:15px;">💊</div>
+      <div>
+        <div style="color:#F0F0EE;font-size:13px;font-weight:600;">Propiedades de Citas</div>
+        <div style="color:#5C5C59;font-size:11px;">Costos y disponibilidad de agendamiento</div>
+      </div>
+    </div>
+    <div style="padding:20px;display:flex;flex-direction:column;gap:16px;">
+
+      <!-- Costo total -->
+      <div>
+        <div style="color:#9A9A96;font-size:11px;margin-bottom:5px;">Precio de la consulta</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="color:#5C5C59;font-size:13px;font-weight:600;">$</div>
+          <div style="background:#20201F;border:1px solid #3D3D3B;border-radius:8px;padding:10px 12px;color:#F0F0EE;font-size:12px;width:120px;">5000</div>
+        </div>
+      </div>
+
+      <!-- Seña -->
+      <div style="background:#20201F;border-radius:10px;padding:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div>
+            <div style="color:#F0F0EE;font-size:12px;font-weight:500;">Requerir seña</div>
+            <div style="color:#5C5C59;font-size:10px;margin-top:2px;">El paciente paga un adelanto al reservar</div>
+          </div>
+          <!-- Toggle ON -->
+          <div style="width:36px;height:20px;background:#7AB619;border-radius:10px;position:relative;cursor:pointer;">
+            <div style="width:16px;height:16px;background:#fff;border-radius:50%;position:absolute;right:2px;top:2px;"></div>
+          </div>
+        </div>
+        <div>
+          <div style="color:#9A9A96;font-size:11px;margin-bottom:5px;">Monto de la seña</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="color:#5C5C59;font-size:13px;font-weight:600;">$</div>
+            <div style="background:#2A2A29;border:1px solid #3D3D3B;border-radius:8px;padding:8px 12px;color:#F0F0EE;font-size:12px;width:120px;">1500</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Aceptar nuevos agendamientos -->
+      <div style="background:#20201F;border-radius:10px;padding:14px;display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <div style="color:#F0F0EE;font-size:12px;font-weight:500;">Aceptar nuevos agendamientos</div>
+          <div style="color:#5C5C59;font-size:10px;margin-top:2px;">Desactivá esto si no podés atender temporalmente</div>
+        </div>
+        <!-- Toggle ON -->
+        <div style="width:36px;height:20px;background:#7AB619;border-radius:10px;position:relative;cursor:pointer;flex-shrink:0;">
+          <div style="width:16px;height:16px;background:#fff;border-radius:50%;position:absolute;right:2px;top:2px;"></div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;padding-top:4px;">
+        <div style="background:#7AB619;border-radius:8px;padding:8px 18px;font-size:12px;color:#fff;font-weight:600;cursor:pointer;">Guardar cambios</div>
+      </div>
+    </div>
+  </div>
+
+</div>
