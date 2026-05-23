@@ -3,7 +3,7 @@
 
 import { useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { User, Calendar, Stethoscope, Upload, CheckCircle, AlertCircle } from 'lucide-react'
+import { User, Calendar, Stethoscope, Upload, CheckCircle, AlertCircle, FileSignature } from 'lucide-react'
 import type { Medico, HorarioDia } from '@/types'
 
 const DIAS = ['lunes','martes','miercoles','jueves','viernes','sabado','domingo'] as const
@@ -164,6 +164,8 @@ export default function ConfigCliente({ medico }: { medico: Medico }) {
     direccion:            medico.direccion            ?? '',
     foto_perfil_url:      medico.foto_perfil_url      as string | null,
     logo_url:             medico.logo_url             as string | null,
+    sello_url:            medico.sello_url            as string | null,
+    firma_url:            medico.firma_url            as string | null,
     horarios:             Object.fromEntries(
       DIAS.map(d => [
         d,
@@ -227,6 +229,8 @@ export default function ConfigCliente({ medico }: { medico: Medico }) {
           direccion:            form.direccion    || null,
           foto_perfil_url:      form.foto_perfil_url,
           logo_url:             form.logo_url,
+          sello_url:            form.sello_url,
+          firma_url:            form.firma_url,
           horarios:             form.horarios,
           precio_consulta:      form.precio_consulta ? parseFloat(form.precio_consulta) : null,
           requiere_sena:        form.requiere_sena,
@@ -248,7 +252,7 @@ export default function ConfigCliente({ medico }: { medico: Medico }) {
   }
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
+    <div className="p-6 w-[85%] mx-auto">
 
       <div className="mb-8">
         <h1 className="text-2xl font-bold mb-1" style={{ color: '#F0F0EE' }}>Configuración</h1>
@@ -261,23 +265,24 @@ export default function ConfigCliente({ medico }: { medico: Medico }) {
         <SectionCard icon={<User size={18} />} color="#7AB619"
           titulo="Información Personal" subtitulo="Tu nombre y datos de contacto">
 
-          <ImageUpload
-            label="Foto de perfil"
-            hint="JPG, PNG o WebP · máx. 2MB"
-            value={form.foto_perfil_url}
-            storagePath={`${medico.id}/avatar.jpg`}
-            onUploaded={url => setField('foto_perfil_url', url)}
-            shape="circle"
-          />
-
-          <ImageUpload
-            label="Logo del consultorio"
-            hint="JPG, PNG o WebP · máx. 2MB"
-            value={form.logo_url}
-            storagePath={`${medico.id}/logo.jpg`}
-            onUploaded={url => setField('logo_url', url)}
-            shape="square"
-          />
+          <div className="grid grid-cols-2 gap-6">
+            <ImageUpload
+              label="Foto de perfil"
+              hint="JPG, PNG o WebP · máx. 2MB"
+              value={form.foto_perfil_url}
+              storagePath={`${medico.id}/avatar.jpg`}
+              onUploaded={url => setField('foto_perfil_url', url)}
+              shape="circle"
+            />
+            <ImageUpload
+              label="Logo del consultorio"
+              hint="JPG, PNG o WebP · máx. 2MB"
+              value={form.logo_url}
+              storagePath={`${medico.id}/logo.jpg`}
+              onUploaded={url => setField('logo_url', url)}
+              shape="square"
+            />
+          </div>
 
           <Campo label="Nombre completo">
             <Input
@@ -409,6 +414,35 @@ export default function ConfigCliente({ medico }: { medico: Medico }) {
               checked={form.acepta_agendamientos}
               onChange={v => setField('acepta_agendamientos', v)}
             />
+          </div>
+        </SectionCard>
+
+        {/* ── Sección 4: Recetas Médicas ── */}
+        <SectionCard icon={<FileSignature size={18} />} color="#8B5CF6"
+          titulo="Recetas Médicas" subtitulo="Imágenes que aparecerán en los PDF de recetas que envíes a tus pacientes">
+
+          <div className="grid grid-cols-2 gap-6">
+            <ImageUpload
+              label="Sello húmedo"
+              hint="Usá fondo blanco o transparente · máx. 2MB"
+              value={form.sello_url}
+              storagePath={`${medico.id}/sello.jpg`}
+              onUploaded={url => setField('sello_url', url)}
+              shape="square"
+            />
+            <ImageUpload
+              label="Firma digital"
+              hint="Usá fondo blanco o transparente · máx. 2MB"
+              value={form.firma_url}
+              storagePath={`${medico.id}/firma.jpg`}
+              onUploaded={url => setField('firma_url', url)}
+              shape="square"
+            />
+          </div>
+
+          <div className="rounded-lg px-4 py-3 text-xs"
+            style={{ background: '#20201F', border: '1px solid #3D3D3B', color: '#5C5C59' }}>
+            Estas imágenes se incluyen automáticamente al pie de cada receta PDF que generes desde la sección de Pacientes.
           </div>
         </SectionCard>
 

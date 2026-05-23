@@ -272,7 +272,7 @@ export default function CampaniasCliente({
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="p-6 w-[85%] mx-auto">
       <div className="mb-6">
         <h1 className="text-2xl font-bold mb-1" style={{ color: '#F0F0EE' }}>Campañas</h1>
         <p className="text-sm" style={{ color: '#5C5C59' }}>

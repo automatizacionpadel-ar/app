@@ -5,6 +5,7 @@ import { Calendar, Users, CheckCircle, Clock } from 'lucide-react'
 import { format, startOfMonth, endOfMonth } from 'date-fns'
 import { es } from 'date-fns/locale'
 import CalendarioCliente from './calendario/CalendarioCliente'
+import ChatButton from './ChatButton'
 
 // ─── Stat Card ───────────────────────────────────────────────────────────────
 function StatCard({ titulo, valor, subtitulo, icon, color }: {
@@ -35,11 +36,12 @@ export default async function DashboardPage() {
   const { data: usuario } = await supabase.from('usuarios').select('rol').eq('id', user.id).single()
   if (!usuario) redirect('/login')
 
-  // Obtener medico_id
+  // Obtener medico_id y slug
   let medicoId: string | null = null
+  let medicoSlug: string | null = null
   if (usuario.rol === 'medico') {
-    const { data: medico } = await supabase.from('medicos').select('id').eq('usuario_id', user.id).single()
-    if (medico) medicoId = medico.id
+    const { data: medico } = await supabase.from('medicos').select('id, slug').eq('usuario_id', user.id).single()
+    if (medico) { medicoId = medico.id; medicoSlug = medico.slug }
   }
 
   const ahora    = new Date()
@@ -83,16 +85,19 @@ export default async function DashboardPage() {
   const fechaHoy = format(ahora, "EEEE d 'de' MMMM", { locale: es })
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="p-6 w-[85%] mx-auto">
 
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold mb-1 capitalize" style={{ color: '#F0F0EE' }}>
-          {fechaHoy}
-        </h1>
-        <p className="text-sm" style={{ color: '#5C5C59' }}>
-          Resumen de actividad del consultorio
-        </p>
+      <div className="flex items-start justify-between mb-8">
+        <div>
+          <h1 className="text-2xl font-bold mb-1 capitalize" style={{ color: '#F0F0EE' }}>
+            {fechaHoy}
+          </h1>
+          <p className="text-sm" style={{ color: '#5C5C59' }}>
+            Resumen de actividad del consultorio
+          </p>
+        </div>
+        {medicoSlug && <ChatButton slug={medicoSlug} />}
       </div>
 
       {/* Stats */}

@@ -13,10 +13,25 @@ export default async function PacientesPage() {
   if (!usuario) redirect('/login')
 
   let medicoId: string | null = null
+  let medicoInfo: { id: string; nombre: string; especialidad: string; logo_url: string | null; sello_url: string | null; firma_url: string | null } | null = null
+
   if (usuario.rol === 'medico') {
     const { data: medico } = await supabase
-      .from('medicos').select('id').eq('usuario_id', user.id).single()
-    if (medico) medicoId = medico.id
+      .from('medicos')
+      .select('id, nombre_completo, especialidad, logo_url, sello_url, firma_url')
+      .eq('usuario_id', user.id)
+      .single()
+    if (medico) {
+      medicoId = medico.id
+      medicoInfo = {
+        id:           medico.id,
+        nombre:       medico.nombre_completo,
+        especialidad: medico.especialidad,
+        logo_url:     medico.logo_url,
+        sello_url:    medico.sello_url,
+        firma_url:    medico.firma_url,
+      }
+    }
   }
 
   const query = supabase
@@ -29,5 +44,5 @@ export default async function PacientesPage() {
 
   const { data: pacientes } = await query
 
-  return <PacientesCliente pacientesIniciales={pacientes ?? []} medicoId={medicoId} />
+  return <PacientesCliente pacientesIniciales={pacientes ?? []} medicoId={medicoId} medicoInfo={medicoInfo} />
 }

@@ -27,6 +27,7 @@ export interface Horarios {
 export interface Medico {
   id:                   string
   usuario_id:           string
+  slug:                 string | null
   nombre_completo:      string
   especialidad:         string
   telefono:             string | null
@@ -45,6 +46,8 @@ export interface Medico {
   webhook_token:        string
   foto_perfil_url:      string | null
   logo_url:             string | null
+  sello_url:            string | null
+  firma_url:            string | null
   precio_consulta:      number | null
   acepta_agendamientos: boolean
   activo:               boolean
@@ -143,6 +146,17 @@ export interface PushSubscription {
   activo:       boolean
   created_at:   string
   last_used_at: string | null
+}
+
+// ─── Recetas ──────────────────────────────────────────────────────────────────
+
+export interface Receta {
+  id:           string
+  medico_id:    string
+  paciente_id:  string
+  medicamentos: string[]
+  pdf_url:      string | null
+  created_at:   string
 }
 
 // ─── Suscripciones ────────────────────────────────────────────────────────────

@@ -124,7 +124,7 @@ export default async function AdminPage() {
   const mrrFormateado = mrr.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 })
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="p-6 w-[85%] mx-auto">
 
       {/* Header */}
       <div className="mb-8">

@@ -79,9 +79,11 @@ self.addEventListener('notificationclick', event => {
   event.notification.close()
 
   const data = event.notification.data || {}
-  const url  = event.action === 'ver' && data.cita_id
-    ? `/app/cita/${data.cita_id}`
-    : '/app'
+  const url  = data.url
+    ? data.url
+    : event.action === 'ver' && data.cita_id
+      ? `/app/cita/${data.cita_id}`
+      : '/app'
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {

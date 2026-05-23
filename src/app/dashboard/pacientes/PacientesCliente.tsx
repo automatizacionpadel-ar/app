@@ -5,11 +5,21 @@ import { useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import {
   Search, Users, Phone, Mail, Calendar,
-  Clock, X, ChevronRight, UserPlus, SlidersHorizontal
+  Clock, X, ChevronRight, UserPlus, SlidersHorizontal, FileText
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import type { Paciente } from '@/types'
+import RecetaModal from './RecetaModal'
+
+interface MedicoInfo {
+  id:           string
+  nombre:       string
+  especialidad: string
+  logo_url:     string | null
+  sello_url:    string | null
+  firma_url:    string | null
+}
 
 // ─── Badge estado push ────────────────────────────────────────────────────────
 function PushBadge({ activo }: { activo: boolean }) {
@@ -25,7 +35,11 @@ function PushBadge({ activo }: { activo: boolean }) {
 }
 
 // ─── Modal detalle paciente ───────────────────────────────────────────────────
-function ModalPaciente({ paciente, onClose }: { paciente: Paciente; onClose: () => void }) {
+function ModalPaciente({ paciente, onClose, onNuevaReceta }: {
+  paciente: Paciente
+  onClose: () => void
+  onNuevaReceta: () => void
+}) {
   const nombre = `${paciente.nombre} ${paciente.apellido ?? ''}`.trim()
   const inicial = nombre.charAt(0).toUpperCase()
 
@@ -93,6 +107,15 @@ function ModalPaciente({ paciente, onClose }: { paciente: Paciente; onClose: () 
           <p className="text-xs pt-1" style={{ color: '#5C5C59' }}>
             Registrado el {format(new Date(paciente.created_at), "d 'de' MMMM yyyy", { locale: es })}
           </p>
+
+          <button onClick={onNuevaReceta}
+            className="w-full flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-all mt-2"
+            style={{ background: 'rgba(139,92,246,0.15)', color: '#8B5CF6', border: '1px solid rgba(139,92,246,0.25)' }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(139,92,246,0.25)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'rgba(139,92,246,0.15)')}>
+            <FileText size={15} />
+            Nueva receta
+          </button>
         </div>
       </div>
     </div>
@@ -139,14 +162,16 @@ function FilaPaciente({ paciente, onClick }: { paciente: Paciente; onClick: () =
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 export default function PacientesCliente({
-  pacientesIniciales, medicoId
+  pacientesIniciales, medicoId, medicoInfo
 }: {
   pacientesIniciales: Paciente[]
   medicoId: string | null
+  medicoInfo: MedicoInfo | null
 }) {
   const [busqueda, setBusqueda]   = useState('')
   const [filtroPush, setFiltroPush] = useState<'todos' | 'con_push' | 'sin_push'>('todos')
   const [pacienteModal, setPacienteModal] = useState<Paciente | null>(null)
+  const [recetaPaciente, setRecetaPaciente] = useState<Paciente | null>(null)
 
   const pacientesFiltrados = useMemo(() => {
     return pacientesIniciales.filter(p => {
@@ -168,7 +193,7 @@ export default function PacientesCliente({
   const totalConPush = pacientesIniciales.filter(p => p.push_activo).length
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="p-6 w-[85%] mx-auto">
 
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
@@ -252,9 +277,22 @@ export default function PacientesCliente({
         )}
       </div>
 
-      {/* Modal */}
+      {/* Modal detalle */}
       {pacienteModal && (
-        <ModalPaciente paciente={pacienteModal} onClose={() => setPacienteModal(null)} />
+        <ModalPaciente
+          paciente={pacienteModal}
+          onClose={() => setPacienteModal(null)}
+          onNuevaReceta={() => { setRecetaPaciente(pacienteModal); setPacienteModal(null) }}
+        />
+      )}
+
+      {/* Modal receta */}
+      {recetaPaciente && medicoInfo && (
+        <RecetaModal
+          paciente={recetaPaciente}
+          medico={medicoInfo}
+          onClose={() => setRecetaPaciente(null)}
+        />
       )}
     </div>
   )

@@ -72,7 +72,7 @@ function ModalCita({ cita, onClose, onEstadoChange }: {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
       onClick={onClose}>
-      <div className="w-full max-w-sm rounded-xl p-6 animate-fade-up"
+      <div className="w-full max-w-sm rounded-xl animate-fade-up"
         style={{ background: '#2A2A29', border: '1px solid #3D3D3B' }}
         onClick={e => e.stopPropagation()}>
 

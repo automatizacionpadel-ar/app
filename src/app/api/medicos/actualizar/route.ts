@@ -21,7 +21,7 @@ export async function PATCH(req: NextRequest) {
     const body = await req.json()
     const {
       nombre_completo, telefono, direccion,
-      foto_perfil_url, logo_url,
+      foto_perfil_url, logo_url, sello_url, firma_url,
       horarios,
       precio_consulta, requiere_sena, monto_sena,
       acepta_agendamientos,
@@ -35,6 +35,8 @@ export async function PATCH(req: NextRequest) {
         direccion:            direccion       || null,
         foto_perfil_url:      foto_perfil_url ?? null,
         logo_url:             logo_url        ?? null,
+        sello_url:            sello_url       ?? null,
+        firma_url:            firma_url       ?? null,
         horarios:             horarios        ?? undefined,
         precio_consulta:      precio_consulta != null
                                 ? (isNaN(parseFloat(String(precio_consulta))) ? null : parseFloat(String(precio_consulta)))

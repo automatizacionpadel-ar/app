@@ -14,7 +14,7 @@ webpush.setVapidDetails(
 
 export async function POST(req: NextRequest) {
   try {
-    const { paciente_id, medico_id, titulo, cuerpo, tipo, cita_id } = await req.json()
+    const { paciente_id, medico_id, titulo, cuerpo, tipo, cita_id, url } = await req.json()
 
     if (!paciente_id || !titulo || !cuerpo) {
       return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 })
@@ -41,6 +41,7 @@ export async function POST(req: NextRequest) {
       data: {
         tag:     tipo || 'general',
         cita_id: cita_id || null,
+        url:     url || null,
       },
     })
 
