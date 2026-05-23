@@ -36,10 +36,12 @@ export async function PATCH(req: NextRequest) {
         foto_perfil_url:      foto_perfil_url ?? null,
         logo_url:             logo_url        ?? null,
         horarios:             horarios        ?? undefined,
-        precio_consulta:      precio_consulta != null ? parseFloat(String(precio_consulta)) : null,
+        precio_consulta:      precio_consulta != null
+                                ? (isNaN(parseFloat(String(precio_consulta))) ? null : parseFloat(String(precio_consulta)))
+                                : null,
         requiere_sena:        requiere_sena   ?? undefined,
         monto_sena:           requiere_sena && monto_sena != null
-                                ? parseFloat(String(monto_sena))
+                                ? (isNaN(parseFloat(String(monto_sena))) ? null : parseFloat(String(monto_sena)))
                                 : null,
         acepta_agendamientos: acepta_agendamientos ?? undefined,
       })
