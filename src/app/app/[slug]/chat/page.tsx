@@ -3,14 +3,15 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { Send, Loader2, ArrowLeft, ImagePlus, X } from 'lucide-react'
+import { Send, Loader2, ArrowLeft, ImagePlus, X, Bell, BellOff, CheckCircle } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import CalendarioTurnos from '@/components/chat/CalendarioTurnos'
+import { usePushNotifications } from '@/hooks/usePushNotifications'
 
 interface Mensaje {
   id:        string
-  role:      'user' | 'assistant' | 'calendar'
+  role:      'user' | 'assistant' | 'calendar' | 'push-prompt'
   content:   string
   imageUrl?: string
   timestamp: Date
@@ -74,6 +75,75 @@ function TypingIndicator() {
   )
 }
 
+function PushPromptWidget({
+  estado, onActivar,
+}: {
+  estado:   ReturnType<typeof usePushNotifications>['estado']
+  onActivar: () => void
+}) {
+  if (estado === 'granted') {
+    return (
+      <div className="flex justify-start mb-3">
+        <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mr-2 mt-1"
+          style={{ background: 'rgba(122,182,25,0.15)' }}>
+          <span style={{ color: '#7AB619', fontSize: '12px' }}>IA</span>
+        </div>
+        <div className="flex items-center gap-2 rounded-2xl px-4 py-2.5"
+          style={{ background: 'rgba(122,182,25,0.12)', border: '1px solid rgba(122,182,25,0.25)' }}>
+          <CheckCircle size={15} style={{ color: '#7AB619', flexShrink: 0 }} />
+          <p className="text-sm" style={{ color: '#7AB619' }}>Notificaciones activadas ✓</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (estado === 'denied') {
+    return (
+      <div className="flex justify-start mb-3">
+        <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mr-2 mt-1"
+          style={{ background: 'rgba(122,182,25,0.15)' }}>
+          <span style={{ color: '#7AB619', fontSize: '12px' }}>IA</span>
+        </div>
+        <div className="rounded-2xl px-4 py-3 max-w-[78%]"
+          style={{ background: '#2A2A29', borderRadius: '18px 18px 18px 4px' }}>
+          <div className="flex items-center gap-2 mb-1">
+            <BellOff size={14} style={{ color: '#EF4444' }} />
+            <p className="text-sm font-medium" style={{ color: '#EF4444' }}>Notificaciones bloqueadas</p>
+          </div>
+          <p className="text-xs" style={{ color: '#5C5C59' }}>
+            Habilitá las notificaciones en la configuración de tu navegador para recibir recordatorios.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex justify-start mb-3">
+      <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mr-2 mt-1"
+        style={{ background: 'rgba(122,182,25,0.15)' }}>
+        <span style={{ color: '#7AB619', fontSize: '12px' }}>IA</span>
+      </div>
+      <div className="rounded-2xl px-4 py-3 max-w-[80%]"
+        style={{ background: '#2A2A29', borderRadius: '18px 18px 18px 4px' }}>
+        <p className="text-sm mb-2.5" style={{ color: '#F0F0EE' }}>
+          🔔 ¡Activá las notificaciones para recibir el recordatorio de tu turno!
+        </p>
+        <button
+          onClick={onActivar}
+          disabled={estado === 'loading'}
+          className="flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all active:scale-95 disabled:opacity-60"
+          style={{ background: '#7AB619', color: '#20201F' }}>
+          {estado === 'loading'
+            ? <><Loader2 size={14} className="animate-spin" /> Activando...</>
+            : <><Bell size={14} /> Activar recordatorios</>
+          }
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export default function ChatPage({ params }: { params: { slug: string } }) {
   const { slug } = params
   const router   = useRouter()
@@ -85,6 +155,8 @@ export default function ChatPage({ params }: { params: { slug: string } }) {
   const [loading,     setLoading]     = useState(false)
   const [imagenPrevia, setImagenPrevia] = useState<{ file: File; preview: string } | null>(null)
   const [uploadingImg, setUploadingImg] = useState(false)
+
+  const { estado: pushEstado, solicitarPermiso } = usePushNotifications(pacienteId, medicoId)
 
   const [chatId] = useState(() => {
     if (typeof window === 'undefined') return ''
@@ -254,7 +326,10 @@ export default function ChatPage({ params }: { params: { slug: string } }) {
       <div className="flex-1 overflow-y-auto px-4 py-4 scrollbar-hide">
         {mensajes.map(msg => (
           <div key={msg.id}>
-            <BurbujaMensaje mensaje={msg} />
+            {msg.role === 'push-prompt'
+              ? <PushPromptWidget estado={pushEstado} onActivar={solicitarPermiso} />
+              : <BurbujaMensaje mensaje={msg} />
+            }
             {msg.role === 'calendar' && medicoId && !confirmedCalendarIds.has(msg.id) && (
               <CalendarioTurnos
                 medicoId={medicoId}
@@ -265,12 +340,24 @@ export default function ChatPage({ params }: { params: { slug: string } }) {
                     next.add(msg.id)
                     return next
                   })
-                  setMensajes(prev => [...prev, {
-                    id:        crypto.randomUUID(),
-                    role:      'assistant',
-                    content:   `✓ Turno confirmado: ${label}. ¡Te esperamos!`,
-                    timestamp: new Date(),
-                  }])
+                  setMensajes(prev => {
+                    const confirmMsg: Mensaje = {
+                      id:        crypto.randomUUID(),
+                      role:      'assistant',
+                      content:   `✓ Turno confirmado: ${label}. ¡Te esperamos!`,
+                      timestamp: new Date(),
+                    }
+                    const msgs = [...prev, confirmMsg]
+                    if (pushEstado !== 'granted') {
+                      msgs.push({
+                        id:        crypto.randomUUID(),
+                        role:      'push-prompt',
+                        content:   '',
+                        timestamp: new Date(),
+                      })
+                    }
+                    return msgs
+                  })
                 }}
               />
             )}
