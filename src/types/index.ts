@@ -25,27 +25,31 @@ export interface Horarios {
 }
 
 export interface Medico {
-  id:                 string
-  usuario_id:         string
-  nombre_completo:    string
-  especialidad:       string
-  telefono:           string | null
-  email:              string | null
-  direccion:          string | null
-  descripcion:        string | null
-  duracion_cita_min:  number
-  horarios:           Horarios | null
-  dias_anticipacion:  number
-  requiere_sena:      boolean
-  monto_sena:         number | null
-  alias_mp:           string | null
-  cbu:                string | null
-  titular_cuenta:     string | null
-  mp_access_token:    string | null
-  webhook_token:      string
-  activo:             boolean
-  created_at:         string
-  updated_at:         string
+  id:                   string
+  usuario_id:           string
+  nombre_completo:      string
+  especialidad:         string
+  telefono:             string | null
+  email:                string | null
+  direccion:            string | null
+  descripcion:          string | null
+  duracion_cita_min:    number
+  horarios:             Horarios | null
+  dias_anticipacion:    number
+  requiere_sena:        boolean
+  monto_sena:           number | null
+  alias_mp:             string | null
+  cbu:                  string | null
+  titular_cuenta:       string | null
+  mp_access_token:      string | null
+  webhook_token:        string
+  foto_perfil_url:      string | null
+  logo_url:             string | null
+  precio_consulta:      number | null
+  acepta_agendamientos: boolean
+  activo:               boolean
+  created_at:           string
+  updated_at:           string
 }
 
 export interface MedicoAgenteConfig {
