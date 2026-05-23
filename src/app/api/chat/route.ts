@@ -56,10 +56,30 @@ export async function POST(req: NextRequest) {
 
     const data = await n8nResponse.json()
 
+    // Resolver paciente_id: puede venir directo de n8n o buscarlo por celular
+    let resolvedPacienteId: string | null = data.paciente_id ?? null
+
+    if (!resolvedPacienteId && data.celular && medico_id) {
+      const { data: pac } = await supabase
+        .from('pacientes')
+        .select('id')
+        .eq('medico_id', medico_id)
+        .eq('celular', data.celular)
+        .single()
+      resolvedPacienteId = pac?.id ?? null
+    }
+
+    if (resolvedPacienteId && chat_id) {
+      await supabase.from('chat_sessions').upsert(
+        { chat_id, paciente_id: resolvedPacienteId, medico_id, updated_at: new Date().toISOString() },
+        { onConflict: 'chat_id' }
+      )
+    }
+
     return NextResponse.json({
       response:    data.response || data.output || 'Sin respuesta del asistente',
       action:      data.action ?? null,
-      paciente_id: data.paciente_id ?? null,
+      paciente_id: resolvedPacienteId,
       chat_id,
     })
   } catch (error) {

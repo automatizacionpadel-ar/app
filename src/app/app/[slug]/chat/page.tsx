@@ -10,11 +10,12 @@ import CalendarioTurnos from '@/components/chat/CalendarioTurnos'
 import { usePushNotifications } from '@/hooks/usePushNotifications'
 
 interface Mensaje {
-  id:        string
-  role:      'user' | 'assistant' | 'calendar' | 'push-prompt'
-  content:   string
-  imageUrl?: string
-  timestamp: Date
+  id:          string
+  role:        'user' | 'assistant' | 'calendar' | 'push-prompt'
+  content:     string
+  imageUrl?:   string
+  pacienteId?: string   // snapshot al momento de mostrar el calendario
+  timestamp:   Date
 }
 
 function BurbujaMensaje({ mensaje }: { mensaje: Mensaje }) {
@@ -148,8 +149,8 @@ export default function ChatPage({ params }: { params: { slug: string } }) {
   const { slug } = params
   const router   = useRouter()
 
-  const [medicoId,    setMedicoId]    = useState<string | null>(null)
-  const [pacienteId,  setPacienteId]  = useState<string | null>(null)
+  const [medicoId,   setMedicoId]   = useState<string | null>(null)
+  const [pacienteId, setPacienteId] = useState<string | null>(null)
   const [mensajes,    setMensajes]    = useState<Mensaje[]>([])
   const [input,       setInput]       = useState('')
   const [loading,     setLoading]     = useState(false)
@@ -160,7 +161,11 @@ export default function ChatPage({ params }: { params: { slug: string } }) {
 
   const [chatId] = useState(() => {
     if (typeof window === 'undefined') return ''
-    return localStorage.getItem('simplificia_chat_id') || crypto.randomUUID()
+    const stored = localStorage.getItem('simplificia_chat_id')
+    if (stored) return stored
+    const newId = crypto.randomUUID()
+    localStorage.setItem('simplificia_chat_id', newId)
+    return newId
   })
   const [confirmedCalendarIds, setConfirmedCalendarIds] = useState<Set<string>>(new Set())
 
@@ -172,10 +177,19 @@ export default function ChatPage({ params }: { params: { slug: string } }) {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [mensajes, loading])
 
-  // Auto-focus cuando carga el médico
+  // Auto-focus: al cargar el médico y después de cada respuesta
   useEffect(() => {
-    if (medicoId) inputRef.current?.focus()
-  }, [medicoId])
+    if (medicoId && !loading && !uploadingImg) inputRef.current?.focus()
+  }, [medicoId, loading, uploadingImg])
+
+  // Preload pacienteId from chat_sessions on mount
+  useEffect(() => {
+    if (!chatId) return
+    fetch(`/api/sesion/paciente?chat_id=${chatId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.paciente_id) setPacienteId(d.paciente_id) })
+      .catch(() => {})
+  }, [chatId])
 
   useEffect(() => {
     fetch(`/api/medicos/publico?slug=${slug}`)
@@ -255,11 +269,15 @@ export default function ChatPage({ params }: { params: { slug: string } }) {
       const data = await res.json()
       if (data.paciente_id) setPacienteId(data.paciente_id)
       if (data.action === 'show_calendar') {
+        // Congela el pacienteId al momento de mostrar el calendario:
+        // usa el que viene en la respuesta o el que ya estaba en el estado.
+        const pidSnapshot = data.paciente_id || pacienteId || undefined
         setMensajes(prev => [...prev, {
-          id:        crypto.randomUUID(),
-          role:      'calendar',
-          content:   data.response || '¡Elegí una fecha disponible!',
-          timestamp: new Date(),
+          id:          crypto.randomUUID(),
+          role:        'calendar',
+          content:     data.response || '¡Elegí una fecha disponible!',
+          pacienteId:  pidSnapshot,
+          timestamp:   new Date(),
         }])
       } else {
         setMensajes(prev => [...prev, {
@@ -278,7 +296,6 @@ export default function ChatPage({ params }: { params: { slug: string } }) {
       }])
     } finally {
       setLoading(false)
-      inputRef.current?.focus()
     }
   }
 
@@ -333,7 +350,8 @@ export default function ChatPage({ params }: { params: { slug: string } }) {
             {msg.role === 'calendar' && medicoId && !confirmedCalendarIds.has(msg.id) && (
               <CalendarioTurnos
                 medicoId={medicoId}
-                pacienteId={pacienteId}
+                chatId={chatId}
+                pacienteId={msg.pacienteId ?? pacienteId}
                 onConfirmed={(label) => {
                   setConfirmedCalendarIds(prev => {
                     const next = new Set(prev)

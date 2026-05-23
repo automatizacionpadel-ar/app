@@ -8,25 +8,41 @@ export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest) {
   try {
-    let body: { medico_id?: string; paciente_id?: string; fecha?: string; hora?: string; metodo_pago?: string }
+    let body: { medico_id?: string; paciente_id?: string; chat_id?: string; fecha?: string; hora?: string; metodo_pago?: string }
     try {
       body = await req.json()
     } catch {
       return NextResponse.json({ error: 'Body inválido' }, { status: 400 })
     }
 
-    const { medico_id, paciente_id, fecha, hora, metodo_pago } = body
+    const { medico_id, paciente_id: pacienteIdBody, chat_id, fecha, hora, metodo_pago } = body
 
-    if (!medico_id || !paciente_id || !fecha || !hora) {
+    if (!medico_id || !fecha || !hora) {
       return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 })
     }
 
     const supabase = createAdminClient()
 
-    // Fetch medico to get duracion
+    // Resolver paciente_id: viene del frontend o se busca por chat_id
+    let paciente_id = pacienteIdBody ?? null
+    if (!paciente_id && chat_id) {
+      const { data: session } = await supabase
+        .from('chat_sessions')
+        .select('paciente_id')
+        .eq('chat_id', chat_id)
+        .eq('medico_id', medico_id)
+        .single()
+      paciente_id = session?.paciente_id ?? null
+    }
+
+    if (!paciente_id) {
+      return NextResponse.json({ error: 'No se pudo identificar al paciente' }, { status: 400 })
+    }
+
+    // Fetch medico to get duracion and payment data
     const { data: medico, error: errMedico } = await supabase
       .from('medicos')
-      .select('id, duracion_cita_min')
+      .select('id, duracion_cita_min, cbu, alias_mp, precio_consulta, requiere_sena, monto_sena')
       .eq('id', medico_id)
       .single()
 
@@ -88,11 +104,27 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Error al crear la cita' }, { status: 500 })
     }
 
+    // Actualizar stats del paciente
+    const { count } = await supabase
+      .from('citas')
+      .select('*', { count: 'exact', head: true })
+      .eq('paciente_id', paciente_id)
+      .neq('estado', 'cancelada')
+    await supabase
+      .from('pacientes')
+      .update({ total_citas: count ?? 1, ultima_cita_at: fechaInicioISO })
+      .eq('id', paciente_id)
+
     return NextResponse.json({
-      ok:           true,
-      cita_id:      cita.id,
-      fecha_inicio: fechaInicioISO,
-      fecha_fin:    fechaFinISO,
+      ok:              true,
+      cita_id:         cita.id,
+      fecha_inicio:    fechaInicioISO,
+      fecha_fin:       fechaFinISO,
+      cbu:             medico.cbu             ?? null,
+      alias_mp:        medico.alias_mp        ?? null,
+      precio_consulta: medico.precio_consulta ?? null,
+      requiere_sena:   medico.requiere_sena   ?? false,
+      monto_sena:      medico.monto_sena      ?? null,
     })
   } catch {
     return NextResponse.json({ error: 'Error inesperado' }, { status: 500 })
