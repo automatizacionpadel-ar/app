@@ -228,7 +228,7 @@ export default function CalendarioCliente({ citasIniciales, medicoId }: {
   }
 
   return (
-    <div className="p-6">
+    <div>
       <div className="mb-6">
         <h1 className="text-2xl font-bold mb-1" style={{ color: '#F0F0EE' }}>Calendario</h1>
         <p className="text-sm" style={{ color: '#5C5C59' }}>

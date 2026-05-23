@@ -68,10 +68,11 @@ export default function ChatPage({ params }: { params: { slug: string } }) {
   const { slug } = params
   const router   = useRouter()
 
-  const [medicoId, setMedicoId]   = useState<string | null>(null)
-  const [mensajes, setMensajes]   = useState<Mensaje[]>([])
-  const [input, setInput]         = useState('')
-  const [loading, setLoading]     = useState(false)
+  const [medicoId,    setMedicoId]    = useState<string | null>(null)
+  const [pacienteId,  setPacienteId]  = useState<string | null>(null)
+  const [mensajes,    setMensajes]    = useState<Mensaje[]>([])
+  const [input,       setInput]       = useState('')
+  const [loading,     setLoading]     = useState(false)
   const [chatId]                  = useState(() => {
     if (typeof window === 'undefined') return ''
     return localStorage.getItem('simplificia_chat_id') || crypto.randomUUID()
@@ -125,6 +126,7 @@ export default function ChatPage({ params }: { params: { slug: string } }) {
         body: JSON.stringify({ medico_id: medicoId, chat_id: chatId, message: textoUsuario }),
       })
       const data = await res.json()
+      if (data.paciente_id) setPacienteId(data.paciente_id)
       if (data.action === 'show_calendar') {
         setMensajes(prev => [...prev, {
           id:        crypto.randomUUID(),
@@ -197,6 +199,7 @@ export default function ChatPage({ params }: { params: { slug: string } }) {
             {msg.role === 'calendar' && medicoId && !confirmedCalendarIds.has(msg.id) && (
               <CalendarioTurnos
                 medicoId={medicoId}
+                pacienteId={pacienteId}
                 onConfirmed={(label) => {
                   setConfirmedCalendarIds(prev => {
                     const next = new Set(prev)

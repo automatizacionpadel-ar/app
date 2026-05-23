@@ -51,8 +51,9 @@ export async function POST(req: NextRequest) {
     const data = await n8nResponse.json()
 
     return NextResponse.json({
-      response: data.response || data.output || 'Sin respuesta del asistente',
-      action:   data.action ?? null,
+      response:    data.response || data.output || 'Sin respuesta del asistente',
+      action:      data.action ?? null,
+      paciente_id: data.paciente_id ?? null,
       chat_id,
     })
   } catch (error) {

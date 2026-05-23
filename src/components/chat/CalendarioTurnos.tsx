@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Banknote, CreditCard, Smartphone } from 'lucide-react'
 
 interface DiaDisponible {
   fecha:  string
@@ -9,18 +9,26 @@ interface DiaDisponible {
   slots:  string[]
 }
 
+type MetodoPago = 'efectivo' | 'transferencia' | 'mercadopago'
+
 interface Props {
-  medicoId:    string
+  medicoId:   string
+  pacienteId: string | null
   onConfirmed: (label: string) => void
 }
 
-export default function CalendarioTurnos({ medicoId, onConfirmed }: Props) {
+const METODOS: { id: MetodoPago; label: string; icon: React.ReactNode }[] = [
+  { id: 'efectivo',     label: 'Efectivo',      icon: <Banknote size={16} /> },
+  { id: 'transferencia', label: 'Transferencia', icon: <CreditCard size={16} /> },
+  { id: 'mercadopago',  label: 'Mercado Pago',  icon: <Smartphone size={16} /> },
+]
+
+export default function CalendarioTurnos({ medicoId, pacienteId, onConfirmed }: Props) {
   const [dias,             setDias]             = useState<DiaDisponible[]>([])
   const [diaSeleccionado,  setDiaSeleccionado]  = useState<DiaDisponible | null>(null)
   const [horaSeleccionada, setHoraSeleccionada] = useState<string | null>(null)
-  const [nombre,           setNombre]           = useState('')
-  const [telefono,         setTelefono]         = useState('')
-  const [step,             setStep]             = useState<'fecha' | 'hora' | 'confirm'>('fecha')
+  const [metodoPago,       setMetodoPago]       = useState<MetodoPago | null>(null)
+  const [step,             setStep]             = useState<'fecha' | 'hora' | 'pago'>('fecha')
   const [loading,          setLoading]          = useState(true)
   const [submitting,       setSubmitting]       = useState(false)
   const [error,            setError]            = useState<string | null>(null)
@@ -28,7 +36,7 @@ export default function CalendarioTurnos({ medicoId, onConfirmed }: Props) {
   useEffect(() => {
     fetch(`/api/citas/disponibles?medico_id=${medicoId}`)
       .then(r => {
-        if (!r.ok) throw new Error('Error al cargar turnos')
+        if (!r.ok) throw new Error()
         return r.json()
       })
       .then((data: DiaDisponible[]) => {
@@ -36,17 +44,13 @@ export default function CalendarioTurnos({ medicoId, onConfirmed }: Props) {
         setLoading(false)
       })
       .catch(() => {
-        setError('Error de conexión. Intentá de nuevo.')
+        setError('Error al cargar turnos. Intentá de nuevo.')
         setLoading(false)
       })
   }, [medicoId])
 
   async function confirmarTurno() {
-    if (!nombre.trim() || !telefono.trim()) {
-      setError('Completá tu nombre y teléfono.')
-      return
-    }
-    if (!diaSeleccionado || !horaSeleccionada) return
+    if (!diaSeleccionado || !horaSeleccionada || !metodoPago || !pacienteId) return
 
     setError(null)
     setSubmitting(true)
@@ -56,11 +60,11 @@ export default function CalendarioTurnos({ medicoId, onConfirmed }: Props) {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          medico_id: medicoId,
-          nombre:    nombre.trim(),
-          telefono:  telefono.trim(),
-          fecha:     diaSeleccionado.fecha,
-          hora:      horaSeleccionada,
+          medico_id:   medicoId,
+          paciente_id: pacienteId,
+          fecha:       diaSeleccionado.fecha,
+          hora:        horaSeleccionada,
+          metodo_pago: metodoPago,
         }),
       })
 
@@ -69,6 +73,7 @@ export default function CalendarioTurnos({ medicoId, onConfirmed }: Props) {
         setStep('fecha')
         setDiaSeleccionado(null)
         setHoraSeleccionada(null)
+        setMetodoPago(null)
         return
       }
 
@@ -85,7 +90,7 @@ export default function CalendarioTurnos({ medicoId, onConfirmed }: Props) {
     }
   }
 
-  const containerStyle: React.CSSProperties = {
+  const box: React.CSSProperties = {
     background:   '#2A2A29',
     border:       '1px solid #3D3D3B',
     borderRadius: '12px',
@@ -93,9 +98,19 @@ export default function CalendarioTurnos({ medicoId, onConfirmed }: Props) {
     marginTop:    '6px',
   }
 
+  const chipBase: React.CSSProperties = {
+    borderRadius: '20px',
+    padding:      '6px 8px',
+    fontSize:     '11px',
+    fontWeight:   600,
+    cursor:       'pointer',
+    whiteSpace:   'nowrap',
+    textAlign:    'center',
+  }
+
   if (loading) {
     return (
-      <div style={containerStyle} className="flex items-center gap-2">
+      <div style={box} className="flex items-center gap-2">
         <Loader2 size={14} className="animate-spin" style={{ color: '#7AB619' }} />
         <span style={{ color: '#5C5C59', fontSize: '13px' }}>Cargando turnos...</span>
       </div>
@@ -104,7 +119,7 @@ export default function CalendarioTurnos({ medicoId, onConfirmed }: Props) {
 
   if (dias.length === 0 && !error) {
     return (
-      <div style={containerStyle}>
+      <div style={box}>
         <p style={{ color: '#5C5C59', fontSize: '13px' }}>
           No hay turnos disponibles en los próximos 14 días.
         </p>
@@ -113,7 +128,8 @@ export default function CalendarioTurnos({ medicoId, onConfirmed }: Props) {
   }
 
   return (
-    <div style={containerStyle}>
+    <div style={box}>
+
       {/* Step 1: fecha */}
       {step === 'fecha' && (
         <div>
@@ -127,17 +143,11 @@ export default function CalendarioTurnos({ medicoId, onConfirmed }: Props) {
                 disabled={submitting}
                 onClick={() => { setError(null); setDiaSeleccionado(dia); setStep('hora') }}
                 style={{
-                  background:   diaSeleccionado?.fecha === dia.fecha ? '#7AB619' : 'rgba(122,182,25,0.15)',
-                  color:        diaSeleccionado?.fecha === dia.fecha ? '#20201F' : '#7AB619',
-                  border:       diaSeleccionado?.fecha === dia.fecha ? 'none' : '1px solid rgba(122,182,25,0.3)',
-                  borderRadius: '20px',
-                  padding:      '6px 8px',
-                  fontSize:     '11px',
-                  fontWeight:   600,
-                  cursor:       submitting ? 'not-allowed' : 'pointer',
-                  whiteSpace:   'nowrap',
-                  opacity:      submitting ? 0.5 : 1,
-                  textAlign:    'center',
+                  ...chipBase,
+                  background: 'rgba(122,182,25,0.15)',
+                  color:      '#7AB619',
+                  border:     '1px solid rgba(122,182,25,0.3)',
+                  opacity:    submitting ? 0.5 : 1,
                 }}
               >
                 {dia.label}
@@ -164,7 +174,7 @@ export default function CalendarioTurnos({ medicoId, onConfirmed }: Props) {
               <button
                 key={slot}
                 disabled={submitting}
-                onClick={() => { setError(null); setHoraSeleccionada(slot); setStep('confirm') }}
+                onClick={() => { setError(null); setHoraSeleccionada(slot); setStep('pago') }}
                 style={{
                   background:   'rgba(122,182,25,0.15)',
                   color:        '#7AB619',
@@ -172,7 +182,7 @@ export default function CalendarioTurnos({ medicoId, onConfirmed }: Props) {
                   borderRadius: '8px',
                   padding:      '5px 10px',
                   fontSize:     '12px',
-                  cursor:       submitting ? 'not-allowed' : 'pointer',
+                  cursor:       'pointer',
                   opacity:      submitting ? 0.5 : 1,
                 }}
               >
@@ -183,72 +193,73 @@ export default function CalendarioTurnos({ medicoId, onConfirmed }: Props) {
         </div>
       )}
 
-      {/* Step 3: confirm */}
-      {step === 'confirm' && diaSeleccionado && horaSeleccionada && (
+      {/* Step 3: pago */}
+      {step === 'pago' && diaSeleccionado && horaSeleccionada && (
         <div>
           <button
-            onClick={() => { setStep('hora'); setNombre(''); setTelefono(''); setError(null) }}
-            style={{ color: '#5C5C59', fontSize: '11px', marginBottom: '8px', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+            onClick={() => { setStep('hora'); setMetodoPago(null); setError(null) }}
+            style={{ color: '#5C5C59', fontSize: '11px', marginBottom: '10px', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
           >
             ← {diaSeleccionado.label} · {horaSeleccionada}
           </button>
-          <p style={{ color: '#F0F0EE', fontSize: '13px', marginBottom: '12px', fontWeight: 600 }}>
-            Confirmá tu turno
+
+          <p style={{ color: '#F0F0EE', fontSize: '13px', marginBottom: '10px', fontWeight: 600 }}>
+            ¿Cómo vas a pagar?
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <input
-              type="text"
-              placeholder="Tu nombre completo"
-              value={nombre}
-              onChange={e => setNombre(e.target.value)}
-              style={{
-                background:   '#20201F',
-                border:       '1px solid #3D3D3B',
-                borderRadius: '8px',
-                padding:      '9px 12px',
-                color:        '#F0F0EE',
-                fontSize:     '13px',
-                outline:      'none',
-              }}
-            />
-            <input
-              type="tel"
-              placeholder="Tu teléfono"
-              value={telefono}
-              onChange={e => setTelefono(e.target.value)}
-              style={{
-                background:   '#20201F',
-                border:       '1px solid #3D3D3B',
-                borderRadius: '8px',
-                padding:      '9px 12px',
-                color:        '#F0F0EE',
-                fontSize:     '13px',
-                outline:      'none',
-              }}
-            />
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
+            {METODOS.map(m => {
+              const selected = metodoPago === m.id
+              return (
+                <button
+                  key={m.id}
+                  disabled={submitting}
+                  onClick={() => setMetodoPago(m.id)}
+                  style={{
+                    display:        'flex',
+                    alignItems:     'center',
+                    gap:            '10px',
+                    background:     selected ? 'rgba(122,182,25,0.15)' : '#20201F',
+                    border:         selected ? '1px solid rgba(122,182,25,0.5)' : '1px solid #3D3D3B',
+                    borderRadius:   '10px',
+                    padding:        '10px 14px',
+                    color:          selected ? '#7AB619' : '#9A9A96',
+                    fontSize:       '13px',
+                    fontWeight:     selected ? 600 : 400,
+                    cursor:         'pointer',
+                    textAlign:      'left',
+                    transition:     'all 0.15s',
+                  }}
+                >
+                  {m.icon}
+                  {m.label}
+                </button>
+              )
+            })}
           </div>
+
           {error && (
-            <p style={{ color: '#FF6B6B', fontSize: '12px', marginTop: '8px' }}>{error}</p>
+            <p style={{ color: '#FF6B6B', fontSize: '12px', marginBottom: '8px' }}>{error}</p>
           )}
+
           <button
             onClick={confirmarTurno}
-            disabled={submitting}
+            disabled={!metodoPago || submitting}
             style={{
-              background:     '#7AB619',
-              color:          '#20201F',
+              background:     metodoPago ? '#7AB619' : '#3D3D3B',
+              color:          metodoPago ? '#20201F' : '#5C5C59',
               border:         'none',
               borderRadius:   '10px',
               padding:        '11px',
               fontSize:       '13px',
               fontWeight:     700,
               width:          '100%',
-              marginTop:      '12px',
-              cursor:         submitting ? 'not-allowed' : 'pointer',
-              opacity:        submitting ? 0.7 : 1,
+              cursor:         metodoPago && !submitting ? 'pointer' : 'not-allowed',
               display:        'flex',
               alignItems:     'center',
               justifyContent: 'center',
               gap:            '6px',
+              transition:     'all 0.15s',
             }}
           >
             {submitting && <Loader2 size={14} className="animate-spin" />}
@@ -257,7 +268,7 @@ export default function CalendarioTurnos({ medicoId, onConfirmed }: Props) {
         </div>
       )}
 
-      {error && step !== 'confirm' && (
+      {error && step !== 'pago' && (
         <p style={{ color: '#FF6B6B', fontSize: '12px', marginTop: '8px' }}>{error}</p>
       )}
     </div>

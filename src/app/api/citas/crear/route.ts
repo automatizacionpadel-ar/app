@@ -8,21 +8,18 @@ export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest) {
   try {
-    let body: { medico_id?: string; nombre?: string; telefono?: string; fecha?: string; hora?: string }
+    let body: { medico_id?: string; paciente_id?: string; fecha?: string; hora?: string; metodo_pago?: string }
     try {
       body = await req.json()
     } catch {
       return NextResponse.json({ error: 'Body inválido' }, { status: 400 })
     }
 
-    const { medico_id, nombre, telefono, fecha, hora } = body
+    const { medico_id, paciente_id, fecha, hora, metodo_pago } = body
 
-    if (!medico_id || !nombre || !telefono || !fecha || !hora) {
+    if (!medico_id || !paciente_id || !fecha || !hora) {
       return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 })
     }
-
-    const trimmedTelefono = telefono.trim()
-    const trimmedNombre   = nombre.trim()
 
     const supabase = createAdminClient()
 
@@ -72,41 +69,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Ese turno ya fue tomado' }, { status: 409 })
     }
 
-    // Find or create paciente
-    const { data: pacienteExistente } = await supabase
-      .from('pacientes')
-      .select('id')
-      .eq('telefono', trimmedTelefono)
-      .eq('medico_id', medico_id)
-      .maybeSingle()
-
-    let pacienteId: string
-
-    if (pacienteExistente) {
-      pacienteId = pacienteExistente.id
-    } else {
-      const { data: nuevoPaciente, error: errPaciente } = await supabase
-        .from('pacientes')
-        .insert({ medico_id, nombre: trimmedNombre, telefono: trimmedTelefono })
-        .select('id')
-        .single()
-
-      if (errPaciente || !nuevoPaciente) {
-        return NextResponse.json({ error: 'Error al registrar paciente' }, { status: 500 })
-      }
-      pacienteId = nuevoPaciente.id
-    }
-
     // Insert cita
     const estado: EstadoCita = 'pendiente'
     const { data: cita, error: errCita } = await supabase
       .from('citas')
       .insert({
         medico_id,
-        paciente_id: pacienteId,
-        fecha_inicio: fechaInicioISO,
-        fecha_fin:    fechaFinISO,
+        paciente_id,
+        fecha_inicio:  fechaInicioISO,
+        fecha_fin:     fechaFinISO,
         estado,
+        metodo_pago:   metodo_pago ?? 'sin_pago',
       })
       .select('id')
       .single()
