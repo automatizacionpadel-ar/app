@@ -1,6 +1,5 @@
 // src/app/dashboard/page.tsx
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+import { getAuthSession } from '@/lib/auth'
 import { Calendar, Users, CheckCircle, Clock } from 'lucide-react'
 import { format, startOfMonth, endOfMonth } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -29,20 +28,10 @@ function StatCard({ titulo, valor, subtitulo, icon, color }: {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default async function DashboardPage() {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const { supabase, rol, negocio } = await getAuthSession()
 
-  const { data: usuario } = await supabase.from('usuarios').select('rol').eq('id', user.id).single()
-  if (!usuario) redirect('/login')
-
-  // Obtener medico_id y slug
-  let negocioId: string | null = null
-  let medicoSlug: string | null = null
-  if (usuario.rol === 'negocio') {
-    const { data: medico } = await supabase.from('negocios').select('id, slug').eq('usuario_id', user.id).single()
-    if (medico) { negocioId = medico.id; medicoSlug = medico.slug }
-  }
+  const negocioId   = rol === 'negocio' ? (negocio?.id   ?? null) : null
+  const medicoSlug  = rol === 'negocio' ? (negocio?.slug ?? null) : null
 
   const ahora    = new Date()
   const mesStart = startOfMonth(ahora).toISOString()
@@ -59,24 +48,24 @@ export default async function DashboardPage() {
     { data: citasCalendario },
   ] = await Promise.all([
     supabase.from('citas').select('*', { count: 'exact', head: true })
-      .eq('medico_id', negocioId ?? '')
+      .eq('negocio_id', negocioId ?? '')
       .gte('fecha_inicio', new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate()).toISOString())
       .lt('fecha_inicio', new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() + 1).toISOString()),
 
     supabase.from('citas').select('*', { count: 'exact', head: true })
-      .eq('medico_id', negocioId ?? '')
+      .eq('negocio_id', negocioId ?? '')
       .gte('fecha_inicio', mesStart).lte('fecha_inicio', mesEnd),
 
     supabase.from('clientes').select('*', { count: 'exact', head: true })
-      .eq('medico_id', negocioId ?? ''),
+      .eq('negocio_id', negocioId ?? ''),
 
     supabase.from('citas').select('*', { count: 'exact', head: true })
-      .eq('medico_id', negocioId ?? '')
+      .eq('negocio_id', negocioId ?? '')
       .eq('estado', 'pendiente'),
 
     supabase.from('citas')
-      .select('id, fecha_inicio, fecha_fin, estado, motivo_consulta, pacientes(nombre, apellido)')
-      .eq('medico_id', negocioId ?? '')
+      .select('id, fecha_inicio, fecha_fin, estado, motivo, clientes(nombre, apellido)')
+      .eq('negocio_id', negocioId ?? '')
       .gte('fecha_inicio', calStart)
       .lte('fecha_inicio', calEnd)
       .order('fecha_inicio', { ascending: true }),
@@ -117,7 +106,7 @@ export default async function DashboardPage() {
           color="#3B82F6"
         />
         <StatCard
-          titulo="Pacientes"
+          titulo="Clientes"
           valor={pacientesTotal ?? 0}
           subtitulo="Total registrados"
           icon={<Users size={20} />}
