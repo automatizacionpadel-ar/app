@@ -14,7 +14,7 @@ interface Mensaje {
   role:        'user' | 'assistant' | 'calendar' | 'push-prompt'
   content:     string
   imageUrl?:   string
-  pacienteId?: string   // snapshot al momento de mostrar el calendario
+  clienteId?: string   // snapshot al momento de mostrar el calendario
   timestamp:   Date
 }
 
@@ -149,15 +149,15 @@ export default function ChatPage({ params }: { params: { slug: string } }) {
   const { slug } = params
   const router   = useRouter()
 
-  const [medicoId,   setMedicoId]   = useState<string | null>(null)
-  const [pacienteId, setPacienteId] = useState<string | null>(null)
+  const [negocioId,  setNegocioId]  = useState<string | null>(null)
+  const [clienteId,  setClienteId]  = useState<string | null>(null)
   const [mensajes,    setMensajes]    = useState<Mensaje[]>([])
   const [input,       setInput]       = useState('')
   const [loading,     setLoading]     = useState(false)
   const [imagenPrevia, setImagenPrevia] = useState<{ file: File; preview: string } | null>(null)
   const [uploadingImg, setUploadingImg] = useState(false)
 
-  const { estado: pushEstado, solicitarPermiso } = usePushNotifications(pacienteId, medicoId)
+  const { estado: pushEstado, solicitarPermiso } = usePushNotifications(clienteId, negocioId)
 
   const [chatId] = useState(() => {
     if (typeof window === 'undefined') return ''
@@ -177,26 +177,26 @@ export default function ChatPage({ params }: { params: { slug: string } }) {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [mensajes, loading])
 
-  // Auto-focus: al cargar el médico y después de cada respuesta
+  // Auto-focus: al cargar el negocio y después de cada respuesta
   useEffect(() => {
-    if (medicoId && !loading && !uploadingImg) inputRef.current?.focus()
-  }, [medicoId, loading, uploadingImg])
+    if (negocioId && !loading && !uploadingImg) inputRef.current?.focus()
+  }, [negocioId, loading, uploadingImg])
 
-  // Preload pacienteId from chat_sessions on mount
+  // Preload clienteId from chat_sessions on mount
   useEffect(() => {
     if (!chatId) return
-    fetch(`/api/sesion/paciente?chat_id=${chatId}`)
+    fetch(`/api/sesion/cliente?chat_id=${chatId}`)
       .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.paciente_id) setPacienteId(d.paciente_id) })
+      .then(d => { if (d?.cliente_id) setClienteId(d.cliente_id) })
       .catch(() => {})
   }, [chatId])
 
   useEffect(() => {
-    fetch(`/api/medicos/publico?slug=${slug}`)
+    fetch(`/api/negocios/publico?slug=${slug}`)
       .then(r => r.json())
       .then(data => {
         if (data.id) {
-          setMedicoId(data.id)
+          setNegocioId(data.id)
           setMensajes([{
             id:        'welcome',
             role:      'assistant',
@@ -224,7 +224,7 @@ export default function ChatPage({ params }: { params: { slug: string } }) {
   }
 
   async function enviarMensaje() {
-    if ((!input.trim() && !imagenPrevia) || loading || !medicoId) return
+    if ((!input.trim() && !imagenPrevia) || loading || !negocioId) return
 
     const textoUsuario = input.trim()
     setInput('')
@@ -264,19 +264,19 @@ export default function ChatPage({ params }: { params: { slug: string } }) {
       const res = await fetch('/api/chat', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ medico_id: medicoId, chat_id: chatId, message: textoUsuario, image_url: imageUrl }),
+        body: JSON.stringify({ negocio_id: negocioId, chat_id: chatId, message: textoUsuario, image_url: imageUrl }),
       })
       const data = await res.json()
-      if (data.paciente_id) setPacienteId(data.paciente_id)
+      if (data.cliente_id) setClienteId(data.cliente_id)
       if (data.action === 'show_calendar') {
-        // Congela el pacienteId al momento de mostrar el calendario:
+        // Congela el clienteId al momento de mostrar el calendario:
         // usa el que viene en la respuesta o el que ya estaba en el estado.
-        const pidSnapshot = data.paciente_id || pacienteId || undefined
+        const pidSnapshot = data.cliente_id || clienteId || undefined
         setMensajes(prev => [...prev, {
           id:          crypto.randomUUID(),
           role:        'calendar',
           content:     data.response || '¡Elegí una fecha disponible!',
-          pacienteId:  pidSnapshot,
+          clienteId:   pidSnapshot,
           timestamp:   new Date(),
         }])
       } else {
@@ -347,11 +347,11 @@ export default function ChatPage({ params }: { params: { slug: string } }) {
               ? <PushPromptWidget estado={pushEstado} onActivar={solicitarPermiso} />
               : <BurbujaMensaje mensaje={msg} />
             }
-            {msg.role === 'calendar' && medicoId && !confirmedCalendarIds.has(msg.id) && (
+            {msg.role === 'calendar' && negocioId && !confirmedCalendarIds.has(msg.id) && (
               <CalendarioTurnos
-                medicoId={medicoId}
+                negocioId={negocioId}
                 chatId={chatId}
-                pacienteId={msg.pacienteId ?? pacienteId}
+                clienteId={msg.clienteId ?? clienteId}
                 onConfirmed={(label) => {
                   setConfirmedCalendarIds(prev => {
                     const next = new Set(prev)
