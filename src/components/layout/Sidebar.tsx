@@ -10,32 +10,32 @@ import clsx from 'clsx'
 import {
   LayoutDashboard, Calendar, Users, Megaphone,
   Settings, LogOut, ChevronLeft, ChevronRight,
-  UserCog, Stethoscope,
+  Briefcase,
 } from 'lucide-react'
 
 interface NavItem {
-  label:       string
-  href:        string
-  icon:        React.ReactNode
-  adminOnly?:  boolean
+  label:        string
+  href:         string
+  icon:         React.ReactNode
+  adminOnly?:   boolean
   clienteOnly?: boolean
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Dashboard',     href: '/dashboard',           icon: <LayoutDashboard size={18} /> },
-  { label: 'Calendario',    href: '/dashboard/calendario', icon: <Calendar size={18} />,    clienteOnly: true },
-  { label: 'Pacientes',     href: '/dashboard/pacientes',  icon: <Users size={18} />,       clienteOnly: true },
-  { label: 'Campañas',      href: '/dashboard/campanias',  icon: <Megaphone size={18} />,   clienteOnly: true },
-  { label: 'Médicos',       href: '/admin/medicos',         icon: <Stethoscope size={18} />, adminOnly: true },
-  { label: 'Configuración', href: '/dashboard/config',     icon: <Settings size={18} /> },
+  { label: 'Dashboard',    href: '/dashboard',          icon: <LayoutDashboard size={18} /> },
+  { label: 'Calendario',   href: '/dashboard/calendario', icon: <Calendar size={18} />,   clienteOnly: true },
+  { label: 'Clientes',     href: '/dashboard/clientes',  icon: <Users size={18} />,       clienteOnly: true },
+  { label: 'Campañas',     href: '/dashboard/campanias', icon: <Megaphone size={18} />,   clienteOnly: true },
+  { label: 'Negocios',     href: '/admin/negocios',      icon: <Briefcase size={18} />,   adminOnly: true },
+  { label: 'Configuración', href: '/dashboard/config',   icon: <Settings size={18} /> },
 ]
 
 interface SidebarProps {
-  rol: 'superadmin' | 'medico'
-  nombreMedico?: string
+  rol:           string
+  nombreNegocio?: string
 }
 
-export default function Sidebar({ rol, nombreMedico }: SidebarProps) {
+export default function Sidebar({ rol, nombreNegocio }: SidebarProps) {
   const pathname = usePathname()
   const router   = useRouter()
   const [collapsed, setCollapsed] = useState(false)
@@ -49,7 +49,7 @@ export default function Sidebar({ rol, nombreMedico }: SidebarProps) {
 
   const isAdmin = rol === 'superadmin'
   const items = NAV_ITEMS
-    .filter(item => !item.adminOnly || isAdmin)
+    .filter(item => !item.adminOnly  || isAdmin)
     .filter(item => !item.clienteOnly || !isAdmin)
     .map(item =>
       item.href === '/dashboard' && isAdmin
@@ -85,15 +85,15 @@ export default function Sidebar({ rol, nombreMedico }: SidebarProps) {
         </button>
       </div>
 
-      {/* Médico info */}
-      {!collapsed && nombreMedico && (
+      {/* Negocio info */}
+      {!collapsed && nombreNegocio && (
         <div className="px-4 py-3 flex-shrink-0"
           style={{ borderBottom: '1px solid #3D3D3B' }}>
           <p className="text-xs" style={{ color: '#5C5C59' }}>
-            {rol === 'superadmin' ? 'Administrador' : 'Dr./Dra.'}
+            {isAdmin ? 'Administrador' : 'Negocio'}
           </p>
           <p className="text-sm font-medium truncate" style={{ color: '#F0F0EE' }}>
-            {nombreMedico}
+            {nombreNegocio}
           </p>
         </div>
       )}

@@ -9,32 +9,26 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  // Obtener rol y datos del médico
   const { data: usuario } = await supabase
-    .from('usuarios')
-    .select('rol')
-    .eq('id', user.id)
-    .single()
-
+    .from('usuarios').select('rol').eq('id', user.id).single()
   if (!usuario) redirect('/login')
 
-  let nombreMedico = user.email ?? ''
+  let nombreNegocio = user.email ?? ''
 
-  if (usuario.rol === 'medico') {
-    const { data: medico } = await supabase
-      .from('medicos')
-      .select('nombre_completo')
+  if (usuario.rol === 'negocio') {
+    const { data: negocio } = await supabase
+      .from('negocios')
+      .select('nombre')
       .eq('usuario_id', user.id)
       .single()
-
-    if (medico) nombreMedico = medico.nombre_completo
+    if (negocio) nombreNegocio = negocio.nombre
   } else {
-    nombreMedico = 'Super Admin'
+    nombreNegocio = 'Super Admin'
   }
 
   return (
     <div className="flex h-screen overflow-hidden">
-      <Sidebar rol={usuario.rol} nombreMedico={nombreMedico} />
+      <Sidebar rol={usuario.rol} nombreNegocio={nombreNegocio} />
       <main className="flex-1 overflow-y-auto">
         {children}
       </main>

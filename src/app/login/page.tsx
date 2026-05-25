@@ -47,7 +47,7 @@ export default function LoginPage() {
 
         {/* Logo */}
         <div className="flex justify-center mb-10">
-          <Image src="/logo.png" alt="SimplificIA" width={200} height={52} priority />
+          <Image src="/logo.png" alt="SimplificIA" width={400} height={104} priority />
         </div>
 
         {/* Card */}

@@ -1,4 +1,4 @@
-// src/app/api/medicos/crear/route.ts
+// src/app/api/negocios/crear/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import { slugify } from '@/lib/slugify'
@@ -7,12 +7,12 @@ async function generateUniqueSlug(
   supabase: ReturnType<typeof createAdminClient>,
   nombre: string
 ): Promise<string> {
-  const base = slugify(nombre) || 'medico'
+  const base = slugify(nombre) || 'negocio'
   let candidate = base
   let i = 2
   while (true) {
     const { data } = await supabase
-      .from('medicos')
+      .from('negocios')
       .select('id')
       .eq('slug', candidate)
       .maybeSingle()
@@ -24,10 +24,8 @@ async function generateUniqueSlug(
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const supabase = createAdminClient()
-
     const {
-      nombre_completo, especialidad, telefono, email,
+      nombre, rubro, telefono, email,
       direccion, descripcion, duracion_cita_min, dias_anticipacion,
       horarios, requiere_sena, monto_sena, alias_mp, cbu, titular_cuenta,
       prompt_personalidad, tono, idioma,
@@ -35,15 +33,15 @@ export async function POST(req: NextRequest) {
       faqs, email_acceso, password_acceso,
     } = body
 
-    // Validaciones básicas
-    if (!nombre_completo || !especialidad || !email_acceso || !password_acceso) {
+    if (!nombre || !rubro || !email_acceso || !password_acceso) {
       return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 })
     }
 
-    // 1. Crear usuario en Supabase Auth
+    const supabase = createAdminClient()
+
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email:    email_acceso,
-      password: password_acceso,
+      email:         email_acceso,
+      password:      password_acceso,
       email_confirm: true,
     })
 
@@ -56,62 +54,57 @@ export async function POST(req: NextRequest) {
 
     const userId = authData.user.id
 
-    // Generate unique slug from nombre_completo
     let slug: string
     try {
-      slug = await generateUniqueSlug(supabase, nombre_completo)
+      slug = await generateUniqueSlug(supabase, nombre)
     } catch {
       await supabase.auth.admin.deleteUser(userId)
       return NextResponse.json({ error: 'Error al generar el identificador' }, { status: 500 })
     }
 
-    // 2. Registrar en tabla usuarios con rol 'medico'
     const { error: usuarioError } = await supabase
       .from('usuarios')
-      .insert({ id: userId, rol: 'medico' })
+      .insert({ id: userId, rol: 'negocio' })
 
     if (usuarioError) {
-      // Rollback: eliminar usuario de Auth
       await supabase.auth.admin.deleteUser(userId)
       return NextResponse.json({ error: 'Error al registrar el usuario' }, { status: 500 })
     }
 
-    // 3. Crear registro en tabla medicos
-    const { data: medico, error: medicoError } = await supabase
-      .from('medicos')
+    const { data: negocio, error: negocioError } = await supabase
+      .from('negocios')
       .insert({
-        usuario_id: userId,
+        usuario_id:        userId,
         slug,
-        nombre_completo,
-        especialidad,
-        telefono:           telefono || null,
-        email:              email || null,
-        direccion:          direccion || null,
-        descripcion:        descripcion || null,
-        duracion_cita_min:  duracion_cita_min ?? 30,
-        dias_anticipacion:  dias_anticipacion ?? 30,
-        horarios:           horarios || null,
-        requiere_sena:      requiere_sena ?? false,
-        monto_sena:         requiere_sena && monto_sena ? parseFloat(monto_sena) : null,
-        alias_mp:           alias_mp || null,
-        cbu:                cbu || null,
-        titular_cuenta:     titular_cuenta || null,
-        activo:             true,
+        nombre,
+        rubro,
+        telefono:          telefono || null,
+        email:             email || null,
+        direccion:         direccion || null,
+        descripcion:       descripcion || null,
+        duracion_cita_min: duracion_cita_min ?? 30,
+        dias_anticipacion: dias_anticipacion ?? 30,
+        horarios:          horarios || null,
+        requiere_sena:     requiere_sena ?? false,
+        monto_sena:        requiere_sena && monto_sena ? parseFloat(monto_sena) : null,
+        alias_mp:          alias_mp || null,
+        cbu:               cbu || null,
+        titular_cuenta:    titular_cuenta || null,
+        activo:            true,
       })
       .select()
       .single()
 
-    if (medicoError || !medico) {
+    if (negocioError || !negocio) {
       await supabase.auth.admin.deleteUser(userId)
-      return NextResponse.json({ error: 'Error al crear el médico' }, { status: 500 })
+      return NextResponse.json({ error: 'Error al crear el negocio' }, { status: 500 })
     }
 
-    // 4. Crear configuración del agente IA
     const { error: configError } = await supabase
-      .from('medico_agente_config')
+      .from('negocio_agente_config')
       .insert({
-        medico_id:            medico.id,
-        prompt_personalidad:  prompt_personalidad || 'Sos el asistente virtual del consultorio.',
+        negocio_id:           negocio.id,
+        prompt_personalidad:  prompt_personalidad || 'Sos el asistente virtual del negocio.',
         tono:                 tono || 'amigable',
         idioma:               idioma || 'es',
         mensaje_bienvenida:   mensaje_bienvenida || '¡Hola! ¿En qué puedo ayudarte?',
@@ -120,34 +113,31 @@ export async function POST(req: NextRequest) {
         mensaje_cancelacion:  mensaje_cancelacion || 'Tu cita del {{fecha}} fue cancelada.',
       })
 
-    if (configError) {
-      console.error('Error creando config agente:', configError)
-    }
+    if (configError) console.error('Error creando config agente:', configError)
 
-    // 5. Crear FAQs (solo las que tienen pregunta y respuesta)
     const faqsValidas = (faqs ?? [])
       .filter((f: any) => f.pregunta?.trim() && f.respuesta?.trim())
       .map((f: any, i: number) => ({
-        medico_id: medico.id,
-        pregunta:  f.pregunta.trim(),
-        respuesta: f.respuesta.trim(),
-        orden:     i,
-        activo:    true,
+        negocio_id: negocio.id,
+        pregunta:   f.pregunta.trim(),
+        respuesta:  f.respuesta.trim(),
+        orden:      i,
+        activo:     true,
       }))
 
     if (faqsValidas.length > 0) {
-      const { error: faqError } = await supabase.from('medico_faqs').insert(faqsValidas)
+      const { error: faqError } = await supabase.from('negocio_faqs').insert(faqsValidas)
       if (faqError) console.error('Error creando FAQs:', faqError)
     }
 
     return NextResponse.json({
-      ok: true,
-      medico_id:     medico.id,
-      slug:          medico.slug,
-      webhook_token: medico.webhook_token,
+      ok:            true,
+      negocio_id:    negocio.id,
+      slug:          negocio.slug,
+      webhook_token: negocio.webhook_token,
     })
   } catch (error) {
-    console.error('Error en /api/medicos/crear:', error)
+    console.error('Error en /api/negocios/crear:', error)
     return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })
   }
 }

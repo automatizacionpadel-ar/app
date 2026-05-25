@@ -159,9 +159,9 @@ function ModalCita({ cita, onClose, onEstadoChange }: {
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 
-export default function CalendarioCliente({ citasIniciales, medicoId }: {
+export default function CalendarioCliente({ citasIniciales, negocioId }: {
   citasIniciales: any[]
-  medicoId: string | null
+  negocioId: string | null
 }) {
   const [events, setEvents]     = useState(citasIniciales.map(citaToEvent))
   const [citaModal, setCitaModal] = useState<any | null>(null)
@@ -178,7 +178,7 @@ export default function CalendarioCliente({ citasIniciales, medicoId }: {
           event:  '*',
           schema: 'public',
           table:  'citas',
-          filter: medicoId ? `medico_id=eq.${medicoId}` : undefined,
+          filter: negocioId ? `negocio_id=eq.${negocioId}` : undefined,
         },
         async (payload) => {
           if (payload.eventType === 'INSERT') {
@@ -212,7 +212,7 @@ export default function CalendarioCliente({ citasIniciales, medicoId }: {
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [medicoId])
+  }, [negocioId])
 
   function handleEstadoChange(id: string, estado: EstadoCita) {
     setEvents(prev => prev.map(ev =>

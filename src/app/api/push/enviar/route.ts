@@ -14,9 +14,9 @@ webpush.setVapidDetails(
 
 export async function POST(req: NextRequest) {
   try {
-    const { paciente_id, medico_id, titulo, cuerpo, tipo, cita_id, url } = await req.json()
+    const { cliente_id, negocio_id, titulo, cuerpo, tipo, cita_id, url } = await req.json()
 
-    if (!paciente_id || !titulo || !cuerpo) {
+    if (!cliente_id || !titulo || !cuerpo) {
       return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 })
     }
 
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     const { data: subscriptions } = await supabase
       .from('push_subscriptions')
       .select('id, subscription')
-      .eq('paciente_id', paciente_id)
+      .eq('cliente_id', cliente_id)
       .eq('activo', true)
 
     if (!subscriptions || subscriptions.length === 0) {
@@ -69,11 +69,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Log
-    if (medico_id) {
+    if (negocio_id) {
       await supabase.from('notificaciones_log').insert(
         subscriptions.map((sub, i) => ({
-          medico_id,
-          paciente_id,
+          negocio_id,
+          cliente_id,
           push_subscription_id: sub.id,
           cita_id:    cita_id || null,
           tipo:       tipo || 'confirmacion',

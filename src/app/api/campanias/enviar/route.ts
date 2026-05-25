@@ -11,9 +11,9 @@ webpush.setVapidDetails(
 
 export async function POST(req: NextRequest) {
   try {
-    const { titulo, contenido, segmento, medico_id } = await req.json()
+    const { titulo, contenido, segmento, negocio_id } = await req.json()
 
-    if (!titulo || !contenido || !medico_id) {
+    if (!titulo || !contenido || !negocio_id) {
       return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 })
     }
 
@@ -22,35 +22,35 @@ export async function POST(req: NextRequest) {
     // Obtener subscriptions según segmento
     let query = supabase
       .from('push_subscriptions')
-      .select('id, subscription, paciente_id')
-      .eq('medico_id', medico_id)
+      .select('id, subscription, cliente_id')
+      .eq('negocio_id', negocio_id)
       .eq('activo', true)
 
     if (segmento === 'inactivos_30d') {
       const fecha = new Date()
       fecha.setDate(fecha.getDate() - 30)
-      const { data: pacientesInactivos } = await supabase
-        .from('pacientes')
+      const { data: clientesInactivos } = await supabase
+        .from('clientes')
         .select('id')
-        .eq('medico_id', medico_id)
+        .eq('negocio_id', negocio_id)
         .lt('ultima_cita_at', fecha.toISOString())
 
-      const ids = (pacientesInactivos ?? []).map(p => p.id)
-      if (ids.length > 0) query = query.in('paciente_id', ids)
+      const ids = (clientesInactivos ?? []).map(p => p.id)
+      if (ids.length > 0) query = query.in('cliente_id', ids)
       else return NextResponse.json({ enviados: 0, fallidos: 0 })
     }
 
     if (segmento === 'inactivos_60d') {
       const fecha = new Date()
       fecha.setDate(fecha.getDate() - 60)
-      const { data: pacientesInactivos } = await supabase
-        .from('pacientes')
+      const { data: clientesInactivos } = await supabase
+        .from('clientes')
         .select('id')
-        .eq('medico_id', medico_id)
+        .eq('negocio_id', negocio_id)
         .lt('ultima_cita_at', fecha.toISOString())
 
-      const ids = (pacientesInactivos ?? []).map(p => p.id)
-      if (ids.length > 0) query = query.in('paciente_id', ids)
+      const ids = (clientesInactivos ?? []).map(p => p.id)
+      if (ids.length > 0) query = query.in('cliente_id', ids)
       else return NextResponse.json({ enviados: 0, fallidos: 0 })
     }
 
@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
     const { data: campania } = await supabase
       .from('mensajes_promo')
       .insert({
-        medico_id,
+        negocio_id,
         titulo,
         contenido,
         segmento,
@@ -119,8 +119,8 @@ export async function POST(req: NextRequest) {
     // Log de notificaciones
     await supabase.from('notificaciones_log').insert(
       subscriptions.map((sub, i) => ({
-        medico_id,
-        paciente_id:          sub.paciente_id,
+        negocio_id,
+        cliente_id:           sub.cliente_id,
         push_subscription_id: sub.id,
         promo_id:             campania?.id ?? null,
         tipo:                 'promocional',

@@ -11,10 +11,10 @@ export default async function CalendarioPage() {
   const { data: usuario } = await supabase.from('usuarios').select('rol').eq('id', user.id).single()
   if (!usuario) redirect('/login')
 
-  let medicoId: string | null = null
+  let negocioId: string | null = null
   if (usuario.rol === 'medico') {
-    const { data: medico } = await supabase.from('medicos').select('id').eq('usuario_id', user.id).single()
-    if (medico) medicoId = medico.id
+    const { data: medico } = await supabase.from('negocios').select('id').eq('usuario_id', user.id).single()
+    if (medico) negocioId = medico.id
   }
 
   // Cargar citas iniciales del mes actual
@@ -29,9 +29,9 @@ export default async function CalendarioPage() {
     .lte('fecha_inicio', end)
     .order('fecha_inicio', { ascending: true })
 
-  if (medicoId) query.eq('medico_id', medicoId)
+  if (negocioId) query.eq('negocio_id', negocioId)
 
   const { data: citas } = await query
 
-  return <CalendarioCliente citasIniciales={citas ?? []} medicoId={medicoId} />
+  return <CalendarioCliente citasIniciales={citas ?? []} negocioId={negocioId} />
 }

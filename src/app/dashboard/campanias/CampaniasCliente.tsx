@@ -10,16 +10,16 @@ import type { MensajePromo } from '@/types'
 type Segmento = 'todos' | 'inactivos_30d' | 'inactivos_60d'
 
 const SEGMENTO_LABEL: Record<Segmento, string> = {
-  todos:         'Todos los pacientes',
+  todos:         'Todos los clientes',
   inactivos_30d: 'Inactivos hace +30 días',
   inactivos_60d: 'Inactivos hace +60 días',
 }
 
 // ─── Formulario nueva campaña ─────────────────────────────────────────────────
 function FormularioCampania({
-  medicoId, totalConPush, onEnviada
+  negocioId, totalConPush, onEnviada
 }: {
-  medicoId: string | null
+  negocioId: string | null
   totalConPush: number
   onEnviada: (campania: MensajePromo) => void
 }) {
@@ -34,7 +34,7 @@ function FormularioCampania({
 
   async function handleEnviar() {
     if (!titulo.trim() || !contenido.trim()) return
-    if (!medicoId) return
+    if (!negocioId) return
 
     setLoading(true)
     setError(null)
@@ -44,7 +44,7 @@ function FormularioCampania({
       const res = await fetch('/api/campanias/enviar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ titulo, contenido, segmento, medico_id: medicoId }),
+        body: JSON.stringify({ titulo, contenido, segmento, negocio_id: negocioId }),
       })
 
       const data = await res.json()
@@ -259,10 +259,10 @@ function HistorialCampanias({ campanias }: { campanias: MensajePromo[] }) {
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 export default function CampaniasCliente({
-  campaniasIniciales, medicoId, totalConPush
+  campaniasIniciales, negocioId, totalConPush
 }: {
   campaniasIniciales: MensajePromo[]
-  medicoId: string | null
+  negocioId: string | null
   totalConPush: number
 }) {
   const [campanias, setCampanias] = useState(campaniasIniciales)
@@ -283,7 +283,7 @@ export default function CampaniasCliente({
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Formulario */}
         <FormularioCampania
-          medicoId={medicoId}
+          negocioId={negocioId}
           totalConPush={totalConPush}
           onEnviada={handleEnviada}
         />

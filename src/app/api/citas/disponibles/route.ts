@@ -17,25 +17,25 @@ const DAY_NUM_TO_KEY: Record<number, keyof Horarios> = {
 const DIAS_ES = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb']
 
 export async function GET(req: NextRequest) {
-  const medicoId = req.nextUrl.searchParams.get('medico_id')
-  if (!medicoId) {
-    return NextResponse.json({ error: 'medico_id requerido' }, { status: 400 })
+  const negocioId = req.nextUrl.searchParams.get('negocio_id')
+  if (!negocioId) {
+    return NextResponse.json({ error: 'negocio_id requerido' }, { status: 400 })
   }
 
   const supabase = createAdminClient()
 
-  const { data: medico } = await supabase
-    .from('medicos')
+  const { data: negocio } = await supabase
+    .from('negocios')
     .select('id, horarios, duracion_cita_min')
-    .eq('id', medicoId)
+    .eq('id', negocioId)
     .single()
 
-  if (!medico) {
+  if (!negocio) {
     return NextResponse.json({ error: 'Médico no encontrado' }, { status: 404 })
   }
 
-  const duracion: number = medico.duracion_cita_min ?? 30
-  const horarios = (medico.horarios ?? {}) as Partial<Horarios>
+  const duracion: number = negocio.duracion_cita_min ?? 30
+  const horarios = (negocio.horarios ?? {}) as Partial<Horarios>
 
   // Fetch existing citas for the next 14 days
   const hoy     = toZonedTime(new Date(), TZ)
@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
   const { data: citasExistentes } = await supabase
     .from('citas')
     .select('fecha_inicio, fecha_fin')
-    .eq('medico_id', medicoId)
+    .eq('negocio_id', negocioId)
     .neq('estado', 'cancelada')
     .gte('fecha_inicio', desde)
     .lte('fecha_inicio', hasta14)

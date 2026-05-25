@@ -37,11 +37,11 @@ export default async function DashboardPage() {
   if (!usuario) redirect('/login')
 
   // Obtener medico_id y slug
-  let medicoId: string | null = null
+  let negocioId: string | null = null
   let medicoSlug: string | null = null
-  if (usuario.rol === 'medico') {
-    const { data: medico } = await supabase.from('medicos').select('id, slug').eq('usuario_id', user.id).single()
-    if (medico) { medicoId = medico.id; medicoSlug = medico.slug }
+  if (usuario.rol === 'negocio') {
+    const { data: medico } = await supabase.from('negocios').select('id, slug').eq('usuario_id', user.id).single()
+    if (medico) { negocioId = medico.id; medicoSlug = medico.slug }
   }
 
   const ahora    = new Date()
@@ -59,24 +59,24 @@ export default async function DashboardPage() {
     { data: citasCalendario },
   ] = await Promise.all([
     supabase.from('citas').select('*', { count: 'exact', head: true })
-      .eq('medico_id', medicoId ?? '')
+      .eq('medico_id', negocioId ?? '')
       .gte('fecha_inicio', new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate()).toISOString())
       .lt('fecha_inicio', new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() + 1).toISOString()),
 
     supabase.from('citas').select('*', { count: 'exact', head: true })
-      .eq('medico_id', medicoId ?? '')
+      .eq('medico_id', negocioId ?? '')
       .gte('fecha_inicio', mesStart).lte('fecha_inicio', mesEnd),
 
-    supabase.from('pacientes').select('*', { count: 'exact', head: true })
-      .eq('medico_id', medicoId ?? ''),
+    supabase.from('clientes').select('*', { count: 'exact', head: true })
+      .eq('medico_id', negocioId ?? ''),
 
     supabase.from('citas').select('*', { count: 'exact', head: true })
-      .eq('medico_id', medicoId ?? '')
+      .eq('medico_id', negocioId ?? '')
       .eq('estado', 'pendiente'),
 
     supabase.from('citas')
       .select('id, fecha_inicio, fecha_fin, estado, motivo_consulta, pacientes(nombre, apellido)')
-      .eq('medico_id', medicoId ?? '')
+      .eq('medico_id', negocioId ?? '')
       .gte('fecha_inicio', calStart)
       .lte('fecha_inicio', calEnd)
       .order('fecha_inicio', { ascending: true }),
@@ -133,7 +133,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Calendario */}
-      <CalendarioCliente citasIniciales={citasCalendario ?? []} medicoId={medicoId} />
+      <CalendarioCliente citasIniciales={citasCalendario ?? []} negocioId={negocioId} />
     </div>
   )
 }

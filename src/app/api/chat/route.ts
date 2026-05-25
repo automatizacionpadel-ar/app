@@ -1,7 +1,4 @@
 // src/app/api/chat/route.ts
-// Proxy entre la PWA del paciente y el webhook de n8n
-// Agrega el webhook_token del médico y reenvía el mensaje
-
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 
@@ -9,37 +6,34 @@ const N8N_BASE_URL = process.env.N8N_WEBHOOK_URL ?? 'https://n8n.simplificia.com
 
 export async function POST(req: NextRequest) {
   try {
-    const { medico_id, chat_id, message, image_url } = await req.json()
+    const { negocio_id, chat_id, message, image_url } = await req.json()
 
-    if (!medico_id || !chat_id || (!message?.trim() && !image_url)) {
+    if (!negocio_id || !chat_id || (!message?.trim() && !image_url)) {
       return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 })
     }
 
     const supabase = createAdminClient()
 
-    // Obtener webhook_token del médico
-    const { data: medico } = await supabase
-      .from('medicos')
+    const { data: negocio } = await supabase
+      .from('negocios')
       .select('webhook_token, activo')
-      .eq('id', medico_id)
+      .eq('id', negocio_id)
       .single()
 
-    if (!medico || !medico.activo) {
-      return NextResponse.json({ error: 'Médico no encontrado o inactivo' }, { status: 404 })
+    if (!negocio || !negocio.activo) {
+      return NextResponse.json({ error: 'Negocio no encontrado o inactivo' }, { status: 404 })
     }
 
-    // Armar mensaje final (texto + imagen si hay)
     const mensajeFinal = [
       message?.trim() ?? '',
       image_url ? `[Imagen adjunta: ${image_url}]` : '',
     ].filter(Boolean).join('\n')
 
-    // Reenviar a n8n con el token
     const n8nResponse = await fetch(N8N_BASE_URL, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        webhook_token: medico.webhook_token,
+        webhook_token: negocio.webhook_token,
         chat_id,
         message: mensajeFinal,
       }),
@@ -56,30 +50,29 @@ export async function POST(req: NextRequest) {
 
     const data = await n8nResponse.json()
 
-    // Resolver paciente_id: puede venir directo de n8n o buscarlo por celular
-    let resolvedPacienteId: string | null = data.paciente_id ?? null
+    let resolvedClienteId: string | null = data.cliente_id ?? null
 
-    if (!resolvedPacienteId && data.celular && medico_id) {
-      const { data: pac } = await supabase
-        .from('pacientes')
+    if (!resolvedClienteId && data.celular && negocio_id) {
+      const { data: cli } = await supabase
+        .from('clientes')
         .select('id')
-        .eq('medico_id', medico_id)
+        .eq('negocio_id', negocio_id)
         .eq('celular', data.celular)
         .single()
-      resolvedPacienteId = pac?.id ?? null
+      resolvedClienteId = cli?.id ?? null
     }
 
-    if (resolvedPacienteId && chat_id) {
+    if (resolvedClienteId && chat_id) {
       await supabase.from('chat_sessions').upsert(
-        { chat_id, paciente_id: resolvedPacienteId, medico_id, updated_at: new Date().toISOString() },
+        { chat_id, cliente_id: resolvedClienteId, negocio_id, updated_at: new Date().toISOString() },
         { onConflict: 'chat_id' }
       )
     }
 
     return NextResponse.json({
-      response:    data.response || data.output || 'Sin respuesta del asistente',
-      action:      data.action ?? null,
-      paciente_id: resolvedPacienteId,
+      response:   data.response || data.output || 'Sin respuesta del asistente',
+      action:     data.action ?? null,
+      cliente_id: resolvedClienteId,
       chat_id,
     })
   } catch (error) {

@@ -1,12 +1,12 @@
 // src/types/index.ts
 
-export type Rol = 'superadmin' | 'medico'
+export type Rol = 'superadmin' | 'negocio'
 
-export type EstadoCita = 'pendiente' | 'confirmada' | 'completada' | 'cancelada' | 'no_asistio'
-export type MetodoPago = 'mercadopago' | 'transferencia' | 'efectivo' | 'sin_pago'
-export type EstadoPago = 'pendiente' | 'pagado' | 'fallido' | 'reembolsado'
+export type EstadoCita  = 'pendiente' | 'confirmada' | 'completada' | 'cancelada' | 'no_asistio'
+export type MetodoPago  = 'mercadopago' | 'transferencia' | 'efectivo' | 'sin_pago'
+export type EstadoPago  = 'pendiente' | 'pagado' | 'fallido' | 'reembolsado'
 
-// ─── Médico ───────────────────────────────────────────────────────────────────
+// ─── Negocio ──────────────────────────────────────────────────────────────────
 
 export interface HorarioDia {
   inicio: string   // "09:00"
@@ -24,12 +24,12 @@ export interface Horarios {
   domingo:   HorarioDia
 }
 
-export interface Medico {
+export interface Negocio {
   id:                   string
   usuario_id:           string
   slug:                 string | null
-  nombre_completo:      string
-  especialidad:         string
+  nombre:               string
+  rubro:                string
   telefono:             string | null
   email:                string | null
   direccion:            string | null
@@ -50,14 +50,15 @@ export interface Medico {
   firma_url:            string | null
   precio_consulta:      number | null
   acepta_agendamientos: boolean
+  habilitar_recetas:    boolean
   activo:               boolean
   created_at:           string
   updated_at:           string
 }
 
-export interface MedicoAgenteConfig {
+export interface NegocioAgenteConfig {
   id:                   string
-  medico_id:            string
+  negocio_id:           string
   prompt_personalidad:  string
   tono:                 string
   idioma:               string
@@ -69,9 +70,9 @@ export interface MedicoAgenteConfig {
   updated_at:           string
 }
 
-export interface MedicoFaq {
+export interface NegocioFaq {
   id:         string
-  medico_id:  string
+  negocio_id: string
   pregunta:   string
   respuesta:  string
   orden:      number
@@ -79,11 +80,11 @@ export interface MedicoFaq {
   created_at: string
 }
 
-// ─── Paciente ─────────────────────────────────────────────────────────────────
+// ─── Cliente ──────────────────────────────────────────────────────────────────
 
-export interface Paciente {
+export interface Cliente {
   id:             string
-  medico_id:      string
+  negocio_id:     string
   nombre:         string
   apellido:       string | null
   celular:        string | null
@@ -100,13 +101,13 @@ export interface Paciente {
 
 export interface Cita {
   id:                         string
-  medico_id:                  string
-  paciente_id:                string
+  negocio_id:                 string
+  cliente_id:                 string
   fecha_inicio:               string
   fecha_fin:                  string
   estado:                     EstadoCita
-  motivo_consulta:            string | null
-  notas_medico:               string | null
+  motivo:                     string | null
+  notas:                      string | null
   metodo_pago:                MetodoPago
   estado_pago:                EstadoPago
   monto_sena:                 number | null
@@ -119,21 +120,19 @@ export interface Cita {
   origen:                     string
   created_at:                 string
   updated_at:                 string
-  // Join con paciente (cuando se hace select con FK)
-  pacientes?:                 Paciente
+  clientes?:                  Cliente
 }
 
-// Cita con datos del paciente expandidos (para el calendario y listas)
-export interface CitaConPaciente extends Cita {
-  pacientes: Paciente
+export interface CitaConCliente extends Cita {
+  clientes: Cliente
 }
 
 // ─── Push ─────────────────────────────────────────────────────────────────────
 
 export interface PushSubscription {
   id:           string
-  paciente_id:  string
-  medico_id:    string
+  cliente_id:   string
+  negocio_id:   string
   subscription: {
     endpoint: string
     keys: {
@@ -152,8 +151,8 @@ export interface PushSubscription {
 
 export interface Receta {
   id:           string
-  medico_id:    string
-  paciente_id:  string
+  negocio_id:   string
+  cliente_id:   string
   medicamentos: string[]
   pdf_url:      string | null
   created_at:   string
@@ -163,7 +162,7 @@ export interface Receta {
 
 export interface Suscripcion {
   id:             string
-  medico_id:      string
+  negocio_id:     string
   monto:          number
   fecha_pago:     string
   periodo_inicio: string
@@ -177,7 +176,7 @@ export interface Suscripcion {
 
 export interface MensajePromo {
   id:             string
-  medico_id:      string
+  negocio_id:     string
   titulo:         string
   contenido:      string
   segmento:       'todos' | 'inactivos_30d' | 'inactivos_60d'
@@ -190,35 +189,29 @@ export interface MensajePromo {
 
 // ─── Formularios ──────────────────────────────────────────────────────────────
 
-export interface FormMedicoNuevo {
-  // Datos básicos
-  nombre_completo:   string
-  especialidad:      string
+export interface FormNegocioNuevo {
+  nombre:            string
+  rubro:             string
   telefono:          string
   email:             string
   direccion:         string
   descripcion:       string
   duracion_cita_min: number
   dias_anticipacion: number
-  // Horarios
-  horarios: Horarios
-  // Pagos
-  requiere_sena:   boolean
-  monto_sena:      number | null
-  alias_mp:        string
-  cbu:             string
-  titular_cuenta:  string
-  mp_access_token: string
-  // Agente IA
+  horarios:          Horarios
+  requiere_sena:     boolean
+  monto_sena:        number | null
+  alias_mp:          string
+  cbu:               string
+  titular_cuenta:    string
+  mp_access_token:   string
   prompt_personalidad:  string
   tono:                 string
   mensaje_bienvenida:   string
   mensaje_confirmacion: string
   mensaje_recordatorio: string
   mensaje_cancelacion:  string
-  // FAQs
   faqs: Array<{ pregunta: string; respuesta: string; orden: number }>
-  // Credenciales de acceso
   email_acceso:    string
   password_acceso: string
 }
@@ -231,14 +224,16 @@ export interface StatCard {
   subtitulo: string
   icono:     string
   tendencia?: {
-    valor:     number
-    positivo:  boolean
+    valor:    number
+    positivo: boolean
   }
 }
 
 export interface NavItem {
-  label:  string
-  href:   string
-  icon:   string
-  badge?: number
+  label:        string
+  href:         string
+  icon:         string
+  badge?:       number
+  adminOnly?:   boolean
+  clienteOnly?: boolean
 }

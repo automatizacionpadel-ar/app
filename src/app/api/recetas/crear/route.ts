@@ -8,17 +8,17 @@ export async function POST(req: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
 
-    const { data: medico } = await supabase
-      .from('medicos')
+    const { data: negocio } = await supabase
+      .from('negocios')
       .select('id')
       .eq('usuario_id', user.id)
       .single()
 
-    if (!medico) return NextResponse.json({ error: 'Médico no encontrado' }, { status: 404 })
+    if (!negocio) return NextResponse.json({ error: 'Negocio no encontrado' }, { status: 404 })
 
-    const { paciente_id, medicamentos, pdf_url } = await req.json()
+    const { cliente_id, medicamentos, pdf_url } = await req.json()
 
-    if (!paciente_id || !medicamentos?.length || !pdf_url) {
+    if (!cliente_id || !medicamentos?.length || !pdf_url) {
       return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 })
     }
 
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     // Guardar receta
     const { data: receta, error: recetaError } = await admin
       .from('recetas')
-      .insert({ medico_id: medico.id, paciente_id, medicamentos, pdf_url })
+      .insert({ negocio_id: negocio.id, cliente_id, medicamentos, pdf_url })
       .select('id')
       .single()
 
@@ -35,13 +35,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: recetaError.message }, { status: 500 })
     }
 
-    // Enviar push al paciente
+    // Enviar push al cliente
     await fetch(`${req.nextUrl.origin}/api/push/enviar`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', cookie: req.headers.get('cookie') ?? '' },
       body: JSON.stringify({
-        paciente_id,
-        medico_id: medico.id,
+        cliente_id,
+        negocio_id: negocio.id,
         titulo: 'Tu médico te envió una receta',
         cuerpo: 'Tocá para abrirla',
         tipo:   'receta',
