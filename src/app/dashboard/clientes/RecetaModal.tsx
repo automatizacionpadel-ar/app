@@ -222,7 +222,7 @@ export default function RecetaModal({ cliente, negocio, onClose }: Props) {
       const res = await fetch('/api/recetas/crear', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ paciente_id: cliente.id, medicamentos: meds, pdf_url: publicUrl }),
+        body: JSON.stringify({ cliente_id: cliente.id, medicamentos: meds, pdf_url: publicUrl }),
       })
 
       if (!res.ok) {

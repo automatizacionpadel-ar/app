@@ -3,8 +3,8 @@
 
 import { useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { User, Calendar, Stethoscope, Upload, CheckCircle, AlertCircle, FileSignature } from 'lucide-react'
-import type { Medico, HorarioDia } from '@/types'
+import { User, Calendar, Briefcase, Stethoscope, Upload, CheckCircle, AlertCircle, FileSignature } from 'lucide-react'
+import type { Negocio, HorarioDia } from '@/types'
 
 const DIAS = ['lunes','martes','miercoles','jueves','viernes','sabado','domingo'] as const
 type Dia = typeof DIAS[number]
@@ -157,27 +157,27 @@ function ImageUpload({ label, hint, value, storagePath, onUploaded, shape }: {
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 
-export default function ConfigCliente({ medico }: { medico: Medico }) {
+export default function ConfigCliente({ negocio }: { negocio: Negocio }) {
   const [form, setForm] = useState(() => ({
-    nombre_completo:      medico.nombre_completo,
-    telefono:             medico.telefono             ?? '',
-    direccion:            medico.direccion            ?? '',
-    foto_perfil_url:      medico.foto_perfil_url      as string | null,
-    logo_url:             medico.logo_url             as string | null,
-    sello_url:            medico.sello_url            as string | null,
-    firma_url:            medico.firma_url            as string | null,
+    nombre:               negocio.nombre,
+    telefono:             negocio.telefono             ?? '',
+    direccion:            negocio.direccion            ?? '',
+    foto_perfil_url:      negocio.foto_perfil_url      as string | null,
+    logo_url:             negocio.logo_url             as string | null,
+    sello_url:            negocio.sello_url            as string | null,
+    firma_url:            negocio.firma_url            as string | null,
     horarios:             Object.fromEntries(
       DIAS.map(d => [
         d,
-        medico.horarios?.[d] ?? { inicio: '09:00', fin: '18:00', activo: d !== 'domingo' },
+        negocio.horarios?.[d] ?? { inicio: '09:00', fin: '18:00', activo: d !== 'domingo' },
       ])
     ) as Record<Dia, HorarioDia>,
-    precio_consulta:      medico.precio_consulta      != null ? String(medico.precio_consulta) : '',
-    requiere_sena:        medico.requiere_sena,
-    monto_sena:           medico.monto_sena           != null ? String(medico.monto_sena) : '',
-    cbu:                  medico.cbu                  ?? '',
-    alias_mp:             medico.alias_mp             ?? '',
-    acepta_agendamientos: medico.acepta_agendamientos,
+    precio_consulta:      negocio.precio_consulta      != null ? String(negocio.precio_consulta) : '',
+    requiere_sena:        negocio.requiere_sena,
+    monto_sena:           negocio.monto_sena           != null ? String(negocio.monto_sena) : '',
+    cbu:                  negocio.cbu                  ?? '',
+    alias_mp:             negocio.alias_mp             ?? '',
+    acepta_agendamientos: negocio.acepta_agendamientos,
   }))
 
   const [loading, setLoading] = useState(false)
@@ -204,8 +204,8 @@ export default function ConfigCliente({ medico }: { medico: Medico }) {
     setExito(false)
 
     // Validate required field
-    if (!form.nombre_completo.trim()) {
-      setError('El nombre completo es requerido.')
+    if (!form.nombre.trim()) {
+      setError('El nombre es requerido.')
       setLoading(false)
       return
     }
@@ -222,11 +222,11 @@ export default function ConfigCliente({ medico }: { medico: Medico }) {
     }
 
     try {
-      const res = await fetch('/api/medicos/actualizar', {
+      const res = await fetch('/api/negocios/actualizar', {
         method:  'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          nombre_completo:      form.nombre_completo,
+          nombre:               form.nombre,
           telefono:             form.telefono     || null,
           direccion:            form.direccion    || null,
           foto_perfil_url:      form.foto_perfil_url,
@@ -274,25 +274,25 @@ export default function ConfigCliente({ medico }: { medico: Medico }) {
               label="Foto de perfil"
               hint="JPG, PNG o WebP · máx. 2MB"
               value={form.foto_perfil_url}
-              storagePath={`${medico.id}/avatar.jpg`}
+              storagePath={`${negocio.id}/avatar.jpg`}
               onUploaded={url => setField('foto_perfil_url', url)}
               shape="circle"
             />
             <ImageUpload
-              label="Logo del consultorio"
+              label="Logo del negocio"
               hint="JPG, PNG o WebP · máx. 2MB"
               value={form.logo_url}
-              storagePath={`${medico.id}/logo.jpg`}
+              storagePath={`${negocio.id}/logo.jpg`}
               onUploaded={url => setField('logo_url', url)}
               shape="square"
             />
           </div>
 
-          <Campo label="Nombre completo">
+          <Campo label="Nombre">
             <Input
-              value={form.nombre_completo}
-              onChange={e => setField('nombre_completo', e.target.value)}
-              placeholder="Dr. Martín García"
+              value={form.nombre}
+              onChange={e => setField('nombre', e.target.value)}
+              placeholder="Nombre del negocio"
             />
           </Campo>
 
@@ -455,7 +455,7 @@ export default function ConfigCliente({ medico }: { medico: Medico }) {
               label="Sello húmedo"
               hint="Usá fondo blanco o transparente · máx. 2MB"
               value={form.sello_url}
-              storagePath={`${medico.id}/sello.jpg`}
+              storagePath={`${negocio.id}/sello.jpg`}
               onUploaded={url => setField('sello_url', url)}
               shape="square"
             />
@@ -463,7 +463,7 @@ export default function ConfigCliente({ medico }: { medico: Medico }) {
               label="Firma digital"
               hint="Usá fondo blanco o transparente · máx. 2MB"
               value={form.firma_url}
-              storagePath={`${medico.id}/firma.jpg`}
+              storagePath={`${negocio.id}/firma.jpg`}
               onUploaded={url => setField('firma_url', url)}
               shape="square"
             />

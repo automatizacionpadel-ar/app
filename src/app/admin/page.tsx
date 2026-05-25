@@ -66,16 +66,16 @@ export default async function AdminPage() {
     { count: nuevosEsteMes },
     { count: citasMes },
     { data: suscripcionesActivas },
-    { data: medicosRecientes },
+    { data: negociosRecientes },
   ] = await Promise.all([
-    supabase.from('medicos')
+    supabase.from('negocios')
       .select('*', { count: 'exact', head: true }),
 
-    supabase.from('medicos')
+    supabase.from('negocios')
       .select('*', { count: 'exact', head: true })
       .eq('activo', true),
 
-    supabase.from('medicos')
+    supabase.from('negocios')
       .select('*', { count: 'exact', head: true })
       .gte('created_at', mesStart).lte('created_at', mesEnd),
 
@@ -85,14 +85,13 @@ export default async function AdminPage() {
 
     // Suscripciones vigentes pagadas (para calcular MRR y al-día)
     supabase.from('suscripciones')
-      .select('medico_id, monto, estado')
+      .select('negocio_id, monto, estado')
       .eq('estado', 'pagado')
       .lte('periodo_inicio', hoy)
       .gte('periodo_fin', hoy),
 
-    // Últimos 10 médicos con su última suscripción
-    supabase.from('medicos')
-      .select('id, nombre_completo, especialidad, activo, created_at')
+    supabase.from('negocios')
+      .select('id, nombre, rubro, activo, created_at')
       .order('created_at', { ascending: false })
       .limit(10),
   ])
@@ -100,23 +99,23 @@ export default async function AdminPage() {
   // MRR: suma de suscripciones vigentes y pagadas
   const mrr = (suscripcionesActivas ?? []).reduce((acc, s) => acc + parseFloat(String(s.monto)), 0)
 
-  // Clientes al día: medico_ids únicos con suscripción vigente pagada
-  const medicoIdsAlDia = new Set((suscripcionesActivas ?? []).map(s => s.medico_id))
-  const clientesAlDia  = medicoIdsAlDia.size
+  // Clientes al día: negocio_ids únicos con suscripción vigente pagada
+  const negocioIdsAlDia = new Set((suscripcionesActivas ?? []).map(s => s.negocio_id))
+  const clientesAlDia  = negocioIdsAlDia.size
 
   // Para la tabla: obtener última suscripción de cada médico reciente
-  const medicoIds = (medicosRecientes ?? []).map(m => m.id)
+  const medicoIds = (negociosRecientes ?? []).map(m => m.id)
   const { data: ultimasSuscripciones } = await supabase
     .from('suscripciones')
-    .select('medico_id, estado, periodo_fin')
-    .in('medico_id', medicoIds.length > 0 ? medicoIds : ['none'])
+    .select('negocio_id, estado, periodo_fin')
+    .in('negocio_id', medicoIds.length > 0 ? medicoIds : ['none'])
     .order('periodo_fin', { ascending: false })
 
-  // Mapa medico_id → estado de suscripción más reciente
-  const suscripcionPorMedico = new Map<string, 'pagado' | 'pendiente' | 'vencido'>()
+  // Mapa negocio_id → estado de suscripción más reciente
+  const suscripcionPorNegocio = new Map<string, 'pagado' | 'pendiente' | 'vencido'>()
   for (const s of ultimasSuscripciones ?? []) {
-    if (!suscripcionPorMedico.has(s.medico_id)) {
-      suscripcionPorMedico.set(s.medico_id, s.estado as 'pagado' | 'pendiente' | 'vencido')
+    if (!suscripcionPorNegocio.has(s.negocio_id)) {
+      suscripcionPorNegocio.set(s.negocio_id, s.estado as 'pagado' | 'pendiente' | 'vencido')
     }
   }
 
@@ -194,7 +193,7 @@ export default async function AdminPage() {
           <h2 className="text-base font-semibold" style={{ color: '#F0F0EE' }}>
             Clientes recientes
           </h2>
-          <a href="/admin/medicos"
+          <a href="/admin/negocios"
             className="text-xs font-medium transition-opacity hover:opacity-75"
             style={{ color: '#7AB619' }}>
             Ver todos →
@@ -205,7 +204,7 @@ export default async function AdminPage() {
           <table className="w-full text-sm">
             <thead>
               <tr style={{ borderBottom: '1px solid #3D3D3B' }}>
-                {['Nombre', 'Especialidad', 'Estado', 'Suscripción', 'Registrado'].map(h => (
+                {['Nombre', 'Rubro', 'Estado', 'Suscripción', 'Registrado'].map(h => (
                   <th key={h} className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider"
                     style={{ color: '#5C5C59' }}>
                     {h}
@@ -214,35 +213,35 @@ export default async function AdminPage() {
               </tr>
             </thead>
             <tbody>
-              {(medicosRecientes ?? []).map((medico, i) => (
-                <tr key={medico.id}
+              {(negociosRecientes ?? []).map((negocio, i) => (
+                <tr key={negocio.id}
                   style={{
-                    borderBottom: i < (medicosRecientes?.length ?? 0) - 1 ? '1px solid #3D3D3B' : 'none',
+                    borderBottom: i < (negociosRecientes?.length ?? 0) - 1 ? '1px solid #3D3D3B' : 'none',
                   }}>
                   <td className="px-6 py-4 font-medium" style={{ color: '#F0F0EE' }}>
-                    {medico.nombre_completo}
+                    {negocio.nombre}
                   </td>
                   <td className="px-6 py-4" style={{ color: '#9A9A96' }}>
-                    {medico.especialidad}
+                    {negocio.rubro}
                   </td>
                   <td className="px-6 py-4">
                     <span className="text-xs rounded-full px-2.5 py-1 font-medium"
-                      style={medico.activo
+                      style={negocio.activo
                         ? { background: 'rgba(122,182,25,0.12)', color: '#7AB619' }
                         : { background: 'rgba(92,92,89,0.15)', color: '#5C5C59' }
                       }>
-                      {medico.activo ? 'Activo' : 'Inactivo'}
+                      {negocio.activo ? 'Activo' : 'Inactivo'}
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <SuscripcionBadge estado={suscripcionPorMedico.get(medico.id) ?? null} />
+                    <SuscripcionBadge estado={suscripcionPorNegocio.get(negocio.id) ?? null} />
                   </td>
                   <td className="px-6 py-4 text-xs" style={{ color: '#5C5C59' }}>
-                    {format(new Date(medico.created_at), 'd MMM yyyy', { locale: es })}
+                    {format(new Date(negocio.created_at), 'd MMM yyyy', { locale: es })}
                   </td>
                 </tr>
               ))}
-              {(medicosRecientes ?? []).length === 0 && (
+              {(negociosRecientes ?? []).length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-6 py-12 text-center text-sm"
                     style={{ color: '#5C5C59' }}>

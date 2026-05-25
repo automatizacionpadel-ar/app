@@ -28,9 +28,9 @@ interface MpData {
 }
 
 interface Props {
-  medicoId:    string
+  negocioId:   string
   chatId:      string
-  pacienteId:  string | null
+  clienteId:   string | null
   onConfirmed: (label: string) => void
 }
 
@@ -74,7 +74,7 @@ function CopyButton({ value }: { value: string }) {
   )
 }
 
-export default function CalendarioTurnos({ medicoId, chatId, pacienteId, onConfirmed }: Props) {
+export default function CalendarioTurnos({ negocioId, chatId, clienteId, onConfirmed }: Props) {
   const [dias,             setDias]             = useState<DiaDisponible[]>([])
   const [diaSeleccionado,  setDiaSeleccionado]  = useState<DiaDisponible | null>(null)
   const [horaSeleccionada, setHoraSeleccionada] = useState<string | null>(null)
@@ -94,7 +94,7 @@ export default function CalendarioTurnos({ medicoId, chatId, pacienteId, onConfi
   const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    fetch(`/api/citas/disponibles?medico_id=${medicoId}`)
+    fetch(`/api/citas/disponibles?negocio_id=${negocioId}`)
       .then(r => {
         if (!r.ok) throw new Error()
         return r.json()
@@ -107,7 +107,7 @@ export default function CalendarioTurnos({ medicoId, chatId, pacienteId, onConfi
         setError('Error al cargar turnos. Intentá de nuevo.')
         setLoading(false)
       })
-  }, [medicoId])
+  }, [negocioId])
 
   // Limpia preview al desmontar
   useEffect(() => {
@@ -127,8 +127,8 @@ export default function CalendarioTurnos({ medicoId, chatId, pacienteId, onConfi
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          medico_id:   medicoId,
-          paciente_id: pacienteId,   // puede ser null; el backend lo busca por chat_id
+          negocio_id:  negocioId,
+          cliente_id:  clienteId,   // puede ser null; el backend lo busca por chat_id
           chat_id:     chatId,
           fecha:       diaSeleccionado.fecha,
           hora:        horaSeleccionada,
@@ -171,7 +171,7 @@ export default function CalendarioTurnos({ medicoId, chatId, pacienteId, onConfi
         const mpRes = await fetch('/api/citas/pago-mp', {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ cita_id: data.cita_id, medico_id: medicoId }),
+          body: JSON.stringify({ cita_id: data.cita_id, negocio_id: negocioId }),
         })
         const mp = await mpRes.json()
         setMpData(mp)

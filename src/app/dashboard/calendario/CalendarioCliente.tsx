@@ -33,8 +33,8 @@ const ESTADO_LABEL: Record<EstadoCita, string> = {
 }
 
 function citaToEvent(cita: any) {
-  const paciente = cita.pacientes
-  const nombre   = paciente ? `${paciente.nombre} ${paciente.apellido ?? ''}`.trim() : 'Paciente'
+  const paciente = cita.clientes
+  const nombre   = paciente ? `${paciente.nombre} ${paciente.apellido ?? ''}`.trim() : 'Cliente'
   return {
     id:              cita.id,
     title:           nombre,
@@ -56,8 +56,8 @@ function ModalCita({ cita, onClose, onEstadoChange }: {
   onEstadoChange: (id: string, estado: EstadoCita) => void
 }) {
   const [loading, setLoading] = useState(false)
-  const paciente = cita.pacientes
-  const nombre   = paciente ? `${paciente.nombre} ${paciente.apellido ?? ''}`.trim() : 'Paciente'
+  const paciente = cita.clientes
+  const nombre   = paciente ? `${paciente.nombre} ${paciente.apellido ?? ''}`.trim() : 'Cliente'
 
   async function cambiarEstado(nuevoEstado: EstadoCita) {
     setLoading(true)
@@ -117,10 +117,10 @@ function ModalCita({ cita, onClose, onEstadoChange }: {
             </div>
           </div>
 
-          {cita.motivo_consulta && (
+          {cita.motivo && (
             <div className="flex items-start gap-3">
               <Stethoscope size={16} style={{ color: '#7AB619', marginTop: 2 }} />
-              <p className="text-sm" style={{ color: '#9A9A96' }}>{cita.motivo_consulta}</p>
+              <p className="text-sm" style={{ color: '#9A9A96' }}>{cita.motivo}</p>
             </div>
           )}
         </div>
@@ -185,7 +185,7 @@ export default function CalendarioCliente({ citasIniciales, negocioId }: {
             // Fetch completo con paciente para tener el nombre
             const { data } = await supabase
               .from('citas')
-              .select('id, fecha_inicio, fecha_fin, estado, motivo_consulta, pacientes(nombre, apellido)')
+              .select('id, fecha_inicio, fecha_fin, estado, motivo, clientes(nombre, apellido)')
               .eq('id', payload.new.id)
               .single()
             if (data) setEvents(prev => [...prev, citaToEvent(data)])

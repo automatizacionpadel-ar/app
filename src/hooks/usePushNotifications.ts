@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 
 type PushState = 'idle' | 'loading' | 'granted' | 'denied' | 'unsupported'
 
-export function usePushNotifications(pacienteId: string | null, medicoId: string | null) {
+export function usePushNotifications(clienteId: string | null, negocioId: string | null) {
   const [estado, setEstado] = useState<PushState>('idle')
 
   // Registrar service worker al montar
@@ -24,7 +24,7 @@ export function usePushNotifications(pacienteId: string | null, medicoId: string
   }, [])
 
   async function solicitarPermiso() {
-    if (!pacienteId || !medicoId) return
+    if (!clienteId || !negocioId) return
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
       setEstado('unsupported')
       return
@@ -59,8 +59,8 @@ export function usePushNotifications(pacienteId: string | null, medicoId: string
       // Guardar subscription en Supabase
       const supabase = createClient()
       const { error } = await supabase.from('push_subscriptions').insert({
-        paciente_id:  pacienteId,
-        medico_id:    medicoId,
+        cliente_id:   clienteId,
+        negocio_id:   negocioId,
         subscription: subscription.toJSON(),
         user_agent:   ua.slice(0, 200),
         dispositivo,
@@ -72,11 +72,11 @@ export function usePushNotifications(pacienteId: string | null, medicoId: string
         if (!error.message.includes('duplicate')) throw error
       }
 
-      // Actualizar flag en pacientes
+      // Actualizar flag en clientes
       await supabase
-        .from('pacientes')
+        .from('clientes')
         .update({ push_activo: true })
-        .eq('id', pacienteId)
+        .eq('id', clienteId)
 
       setEstado('granted')
     } catch (err) {
