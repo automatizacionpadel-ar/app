@@ -15,13 +15,24 @@ export async function POST(req: NextRequest) {
 
     // medico_id is the legacy field name sent by older n8n workflow nodes
     const { nombre, celular, chat_id, apellido } = body
-    const negocio_id = body.negocio_id ?? body.medico_id
+    let negocio_id = body.negocio_id ?? body.medico_id
+
+    const supabase = createAdminClient()
+
+    // If negocio_id missing but chat_id present, look it up from mensajes table
+    if (!negocio_id && chat_id) {
+      const { data: msg } = await supabase
+        .from('mensajes')
+        .select('negocio_id')
+        .eq('chat_id', chat_id)
+        .limit(1)
+        .maybeSingle()
+      negocio_id = msg?.negocio_id ?? undefined
+    }
 
     if (!negocio_id || !nombre || !celular) {
       return NextResponse.json({ error: 'Faltan campos requeridos: negocio_id, nombre, celular' }, { status: 400 })
     }
-
-    const supabase = createAdminClient()
 
     const { data: cliente, error: errCliente } = await supabase
       .from('clientes')
