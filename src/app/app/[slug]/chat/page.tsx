@@ -137,6 +137,29 @@ export default function ChatPage({ params }: { params: { slug: string } }) {
       .catch(() => {})
   }, [chatId])
 
+  // Reload messages when tab comes back into focus (e.g. after tapping a push notification)
+  useEffect(() => {
+    if (!negocioId || !chatId) return
+    const handleVisibility = () => {
+      if (document.visibilityState !== 'visible') return
+      fetch(`/api/chat/historial?negocio_id=${negocioId}&chat_id=${chatId}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          const msgs: Mensaje[] = (data?.mensajes ?? []).map((m: any) => ({
+            id:        m.id,
+            role:      m.role as 'user' | 'assistant',
+            content:   m.content,
+            imageUrl:  m.image_url ?? undefined,
+            timestamp: new Date(m.created_at),
+          }))
+          if (msgs.length > 0) setMensajes(msgs)
+        })
+        .catch(() => {})
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => document.removeEventListener('visibilitychange', handleVisibility)
+  }, [negocioId, chatId])
+
   useEffect(() => {
     if (!chatId) return
     fetch(`/api/negocios/publico?slug=${slug}`)
