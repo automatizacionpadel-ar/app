@@ -138,13 +138,29 @@ export default function ChatPage({ params }: { params: { slug: string } }) {
   }, [chatId])
 
   useEffect(() => {
+    if (!chatId) return
     fetch(`/api/negocios/publico?slug=${slug}`)
       .then(r => r.json())
-      .then(data => {
-        if (data.id) {
-          setNegocioId(data.id)
-          setLogoUrl(data.logo_url ?? null)
-          setColorMarca(data.color_marca ?? '#7AB619')
+      .then(async data => {
+        if (!data.id) return
+        setNegocioId(data.id)
+        setLogoUrl(data.logo_url ?? null)
+        setColorMarca(data.color_marca ?? '#7AB619')
+
+        // Load message history for this chat session
+        const histRes = await fetch(`/api/chat/historial?negocio_id=${data.id}&chat_id=${chatId}`)
+        const histData = histRes.ok ? await histRes.json() : null
+        const historial: Mensaje[] = (histData?.mensajes ?? []).map((m: any) => ({
+          id:        m.id,
+          role:      m.role as 'user' | 'assistant',
+          content:   m.content,
+          imageUrl:  m.image_url ?? undefined,
+          timestamp: new Date(m.created_at),
+        }))
+
+        if (historial.length > 0) {
+          setMensajes(historial)
+        } else {
           setMensajes([{
             id:        'welcome',
             role:      'assistant',
@@ -154,7 +170,7 @@ export default function ChatPage({ params }: { params: { slug: string } }) {
         }
       })
       .catch(console.error)
-  }, [slug])
+  }, [slug, chatId])
 
   function seleccionarImagen(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
