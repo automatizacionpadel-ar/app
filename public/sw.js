@@ -47,8 +47,8 @@ self.addEventListener('push', event => {
   const {
     title = 'SimplificIA',
     body = '',
-    icon = '/logo.png',
-    badge = '/logo.png',
+    icon = '/favicon.ico',
+    badge = '/favicon.ico',
     data: extraData = {}
   } = data
 
