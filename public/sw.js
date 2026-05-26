@@ -74,20 +74,17 @@ self.addEventListener('notificationclick', event => {
   event.notification.close()
 
   const data = event.notification.data || {}
-  const url  = data.url
-    ? data.url
-    : event.action === 'ver' && data.cita_id
-      ? `/app/cita/${data.cita_id}`
-      : '/app'
+  const url  = data.url || '/'
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
+      // If a tab already has the exact URL open, focus it
       for (const client of clientList) {
-        if (client.url.includes(self.location.origin) && 'focus' in client) {
-          client.navigate(url)
+        if (client.url === url && 'focus' in client) {
           return client.focus()
         }
       }
+      // Otherwise open a new tab
       if (clients.openWindow) return clients.openWindow(url)
     })
   )

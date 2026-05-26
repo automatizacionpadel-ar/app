@@ -1,4 +1,3 @@
-// src/app/api/campanias/enviar/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import webpush from 'web-push'
@@ -19,7 +18,16 @@ export async function POST(req: NextRequest) {
 
     const supabase = createAdminClient()
 
-    // Obtener subscriptions según segmento
+    // Get negocio slug to build the chat URL
+    const { data: negocio } = await supabase
+      .from('negocios')
+      .select('slug')
+      .eq('id', negocio_id)
+      .single()
+
+    const chatBaseUrl = `https://app.simplificia.com.ar/app/${negocio?.slug}/chat`
+
+    // Build subscriptions query by segment
     let query = supabase
       .from('push_subscriptions')
       .select('id, subscription, cliente_id')
@@ -60,15 +68,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ enviados: 0, fallidos: 0 })
     }
 
-    // Payload de la notificación
+    // Notification payload — title only, body is a tap prompt
+    // Full content is delivered as a message in the chat
     const payload = JSON.stringify({
       title: titulo,
-      body:  contenido,
+      body:  'Tocá para ver el mensaje completo',
       icon:  '/logo.png',
       badge: '/logo.png',
+      data: {
+        tag: 'campania',
+        url: chatBaseUrl,
+      },
     })
 
-    // Enviar en paralelo
+    // Send push notifications in parallel
     const resultados = await Promise.allSettled(
       subscriptions.map(sub =>
         webpush.sendNotification(sub.subscription as any, payload)
@@ -84,23 +97,38 @@ export async function POST(req: NextRequest) {
         enviados++
       } else {
         fallidos++
-        // Si el error es 410 Gone, la subscription expiró
         const status = (result.reason as any)?.statusCode
-        if (status === 410 || status === 404) {
-          expiradas.push(subscriptions[i].id)
-        }
+        if (status === 410 || status === 404) expiradas.push(subscriptions[i].id)
       }
     })
 
-    // Marcar subscriptions expiradas como inactivas
     if (expiradas.length > 0) {
-      await supabase
-        .from('push_subscriptions')
-        .update({ activo: false })
-        .in('id', expiradas)
+      await supabase.from('push_subscriptions').update({ activo: false }).in('id', expiradas)
     }
 
-    // Guardar registro de campaña
+    // Insert campaign content as a chat message for each client that has a session
+    const clienteIds = subscriptions.map(s => s.cliente_id).filter(Boolean)
+    if (clienteIds.length > 0) {
+      const { data: sessions } = await supabase
+        .from('chat_sessions')
+        .select('chat_id, cliente_id')
+        .in('cliente_id', clienteIds)
+        .eq('negocio_id', negocio_id)
+
+      if (sessions && sessions.length > 0) {
+        await supabase.from('mensajes').insert(
+          sessions.map(s => ({
+            negocio_id,
+            chat_id:    s.chat_id,
+            cliente_id: s.cliente_id,
+            role:       'assistant',
+            content:    contenido,
+          }))
+        )
+      }
+    }
+
+    // Save campaign record
     const { data: campania } = await supabase
       .from('mensajes_promo')
       .insert({
@@ -116,7 +144,7 @@ export async function POST(req: NextRequest) {
       .select()
       .single()
 
-    // Log de notificaciones
+    // Log notifications
     await supabase.from('notificaciones_log').insert(
       subscriptions.map((sub, i) => ({
         negocio_id,
@@ -128,8 +156,8 @@ export async function POST(req: NextRequest) {
         cuerpo:               contenido,
         exitoso:              resultados[i].status === 'fulfilled',
         error_mensaje:        resultados[i].status === 'rejected'
-                                ? String((resultados[i] as PromiseRejectedResult).reason)
-                                : null,
+          ? String((resultados[i] as PromiseRejectedResult).reason)
+          : null,
       }))
     )
 
