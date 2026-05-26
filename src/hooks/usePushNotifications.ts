@@ -21,9 +21,19 @@ export function usePushNotifications(
 
     navigator.serviceWorker.register('/sw.js').catch(console.error)
 
-    // Verificar estado actual del permiso
-    if (Notification.permission === 'granted') setEstado('granted')
-    if (Notification.permission === 'denied')  setEstado('denied')
+    if (Notification.permission === 'denied') {
+      setEstado('denied')
+      return
+    }
+
+    if (Notification.permission === 'granted') {
+      // Verify there's an actual active subscription in the browser
+      navigator.serviceWorker.ready.then(reg =>
+        reg.pushManager.getSubscription().then(sub => {
+          setEstado(sub ? 'granted' : 'idle')
+        })
+      ).catch(() => setEstado('idle'))
+    }
   }, [])
 
   async function solicitarPermiso() {
@@ -46,12 +56,13 @@ export function usePushNotifications(
         }
       }
 
-      // Pedir permiso al usuario
-      const permiso = await Notification.requestPermission()
-
-      if (permiso !== 'granted') {
-        setEstado('denied')
-        return
+      // Request permission only if not already granted
+      if (Notification.permission !== 'granted') {
+        const permiso = await Notification.requestPermission()
+        if (permiso !== 'granted') {
+          setEstado('denied')
+          return
+        }
       }
 
       // Obtener el registration del service worker

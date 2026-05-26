@@ -394,7 +394,7 @@ export default function ChatPage({ params }: { params: { slug: string } }) {
               {/* Toggle */}
               {pushEstado !== 'unsupported' && pushEstado !== 'denied' && (
                 <button
-                  onClick={pushEstado !== 'granted' ? solicitarPermiso : undefined}
+                  onClick={solicitarPermiso}
                   disabled={pushEstado === 'loading'}
                   className="relative flex-shrink-0 w-11 h-6 rounded-full transition-colors duration-200 disabled:opacity-60"
                   style={{ background: pushEstado === 'granted' ? colorMarca : '#3D3D3B' }}>
