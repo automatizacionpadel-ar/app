@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import Image from 'next/image'
-import { Send, Loader2, ArrowLeft, ImagePlus, X, Bell, BellOff, CheckCircle } from 'lucide-react'
+import { Send, Loader2, ArrowLeft, ImagePlus, X, Bell, Settings } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import CalendarioTurnos from '@/components/chat/CalendarioTurnos'
@@ -11,7 +10,7 @@ import { usePushNotifications } from '@/hooks/usePushNotifications'
 
 interface Mensaje {
   id:          string
-  role:        'user' | 'assistant' | 'calendar' | 'push-prompt'
+  role:        'user' | 'assistant' | 'calendar'
   content:     string
   imageUrl?:   string
   clienteId?: string   // snapshot al momento de mostrar el calendario
@@ -88,77 +87,19 @@ function TypingIndicator({ logoUrl, color }: { logoUrl: string | null; color: st
   )
 }
 
-function PushPromptWidget({
-  estado, onActivar, logoUrl, color,
-}: {
-  estado:   ReturnType<typeof usePushNotifications>['estado']
-  onActivar: () => void
-  logoUrl:  string | null
-  color:    string
-}) {
-  if (estado === 'granted') {
-    return (
-      <div className="flex justify-start mb-3">
-        <div className="mr-2 mt-1">
-          <AvatarBot logoUrl={logoUrl} color={color} />
-        </div>
-        <div className="flex items-center gap-2 rounded-2xl px-4 py-2.5"
-          style={{ background: `${color}1A`, border: `1px solid ${color}40` }}>
-          <CheckCircle size={15} style={{ color, flexShrink: 0 }} />
-          <p className="text-sm" style={{ color }}>Notificaciones activadas ✓</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (estado === 'denied') {
-    return (
-      <div className="flex justify-start mb-3">
-        <div className="mr-2 mt-1">
-          <AvatarBot logoUrl={logoUrl} color={color} />
-        </div>
-        <div className="rounded-2xl px-4 py-3 max-w-[78%]"
-          style={{ background: '#2A2A29', borderRadius: '18px 18px 18px 4px' }}>
-          <div className="flex items-center gap-2 mb-1">
-            <BellOff size={14} style={{ color: '#EF4444' }} />
-            <p className="text-sm font-medium" style={{ color: '#EF4444' }}>Notificaciones bloqueadas</p>
-          </div>
-          <p className="text-xs" style={{ color: '#5C5C59' }}>
-            Habilitá las notificaciones en la configuración de tu navegador para recibir recordatorios.
-          </p>
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="flex justify-start mb-3">
-      <div className="mr-2 mt-1">
-        <AvatarBot logoUrl={logoUrl} color={color} />
-      </div>
-      <div className="rounded-2xl px-4 py-3 max-w-[80%]"
-        style={{ background: '#2A2A29', borderRadius: '18px 18px 18px 4px' }}>
-        <p className="text-sm mb-2.5" style={{ color: '#F0F0EE' }}>
-          🔔 ¡Activá las notificaciones para recibir el recordatorio de tu turno!
-        </p>
-        <button
-          onClick={onActivar}
-          disabled={estado === 'loading'}
-          className="flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all active:scale-95 disabled:opacity-60"
-          style={{ background: color, color: '#fff' }}>
-          {estado === 'loading'
-            ? <><Loader2 size={14} className="animate-spin" /> Activando...</>
-            : <><Bell size={14} /> Activar recordatorios</>
-          }
-        </button>
-      </div>
-    </div>
-  )
-}
 
 export default function ChatPage({ params }: { params: { slug: string } }) {
   const { slug } = params
   const router   = useRouter()
+
+  const [chatId] = useState(() => {
+    if (typeof window === 'undefined') return ''
+    const stored = localStorage.getItem('simplificia_chat_id')
+    if (stored) return stored
+    const newId = crypto.randomUUID()
+    localStorage.setItem('simplificia_chat_id', newId)
+    return newId
+  })
 
   const [negocioId,  setNegocioId]  = useState<string | null>(null)
   const [logoUrl,    setLogoUrl]    = useState<string | null>(null)
@@ -170,17 +111,9 @@ export default function ChatPage({ params }: { params: { slug: string } }) {
   const [imagenPrevia, setImagenPrevia] = useState<{ file: File; preview: string } | null>(null)
   const [uploadingImg, setUploadingImg] = useState(false)
 
-  const { estado: pushEstado, solicitarPermiso } = usePushNotifications(clienteId, negocioId)
-
-  const [chatId] = useState(() => {
-    if (typeof window === 'undefined') return ''
-    const stored = localStorage.getItem('simplificia_chat_id')
-    if (stored) return stored
-    const newId = crypto.randomUUID()
-    localStorage.setItem('simplificia_chat_id', newId)
-    return newId
-  })
+  const { estado: pushEstado, solicitarPermiso } = usePushNotifications(clienteId, negocioId, chatId)
   const [confirmedCalendarIds, setConfirmedCalendarIds] = useState<Set<string>>(new Set())
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   const bottomRef  = useRef<HTMLDivElement>(null)
   const inputRef   = useRef<HTMLTextAreaElement>(null)
@@ -333,40 +266,79 @@ export default function ChatPage({ params }: { params: { slug: string } }) {
     <div className="flex flex-col h-screen">
 
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3 flex-shrink-0"
-        style={{ background: '#2A2A29', borderBottom: '1px solid #3D3D3B' }}>
-        <button onClick={() => router.back()} className="rounded-lg p-1.5" style={{ color: '#5C5C59' }}>
-          <ArrowLeft size={18} />
-        </button>
-        <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0"
-          style={{ background: `${colorMarca}26` }}>
-          {logoUrl
-            ? <img src={logoUrl} alt="logo" className="w-full h-full object-cover" />
-            : <div className="w-full h-full flex items-center justify-center">
-                <span style={{ color: colorMarca, fontSize: '14px', fontWeight: 600 }}>IA</span>
-              </div>
-          }
-        </div>
-        <div>
-          <p className="text-sm font-semibold" style={{ color: '#F0F0EE' }}>Asistente</p>
-          <div className="flex items-center gap-1">
-            <div className="w-1.5 h-1.5 rounded-full" style={{ background: colorMarca }} />
-            <p className="text-xs" style={{ color: colorMarca }}>En línea</p>
+      <div className="flex-shrink-0" style={{ background: '#2A2A29', borderBottom: '1px solid #3D3D3B' }}>
+        <div className="flex items-center gap-3 px-4 py-3">
+          <button onClick={() => router.back()} className="rounded-lg p-1.5" style={{ color: '#5C5C59' }}>
+            <ArrowLeft size={18} />
+          </button>
+          <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0"
+            style={{ background: `${colorMarca}26` }}>
+            {logoUrl
+              ? <img src={logoUrl} alt="logo" className="w-full h-full object-cover" />
+              : <div className="w-full h-full flex items-center justify-center">
+                  <span style={{ color: colorMarca, fontSize: '14px', fontWeight: 600 }}>IA</span>
+                </div>
+            }
           </div>
+          <div>
+            <p className="text-sm font-semibold" style={{ color: '#F0F0EE' }}>Asistente</p>
+            <div className="flex items-center gap-1">
+              <div className="w-1.5 h-1.5 rounded-full" style={{ background: colorMarca }} />
+              <p className="text-xs" style={{ color: colorMarca }}>En línea</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setSettingsOpen(o => !o)}
+            className="ml-auto rounded-lg p-1.5 transition-colors"
+            style={{ color: settingsOpen ? colorMarca : '#5C5C59' }}>
+            <Settings size={20} />
+          </button>
         </div>
-        <div className="ml-auto">
-          <Image src="/logo.png" alt="SimplificIA" width={113} height={30} style={{ mixBlendMode: 'screen' }} />
-        </div>
+
+        {/* Settings panel */}
+        {settingsOpen && (
+          <div className="px-4 pb-3" style={{ borderTop: '1px solid #3D3D3B' }}>
+            <div className="flex items-center justify-between py-3">
+              <div className="flex items-center gap-2.5">
+                <Bell size={16} style={{ color: '#9A9A96' }} />
+                <div>
+                  <p className="text-sm" style={{ color: '#F0F0EE' }}>Notificaciones</p>
+                  <p className="text-xs" style={{ color: '#5C5C59' }}>
+                    {pushEstado === 'granted'  ? 'Notificaciones activadas'  :
+                     pushEstado === 'denied'   ? 'Bloqueadas en el navegador' :
+                     pushEstado === 'unsupported' ? 'No disponible en este dispositivo' :
+                     'Recibí alertas de tus turnos'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Toggle */}
+              {pushEstado !== 'unsupported' && pushEstado !== 'denied' && (
+                <button
+                  onClick={pushEstado !== 'granted' ? solicitarPermiso : undefined}
+                  disabled={pushEstado === 'loading'}
+                  className="relative flex-shrink-0 w-11 h-6 rounded-full transition-colors duration-200 disabled:opacity-60"
+                  style={{ background: pushEstado === 'granted' ? colorMarca : '#3D3D3B' }}>
+                  <span
+                    className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200"
+                    style={{ transform: pushEstado === 'granted' ? 'translateX(20px)' : 'translateX(0)' }}
+                  />
+                </button>
+              )}
+
+              {pushEstado === 'denied' && (
+                <p className="text-xs" style={{ color: '#EF4444' }}>Bloqueadas</p>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Mensajes */}
       <div className="flex-1 overflow-y-auto px-4 py-4 scrollbar-hide">
         {mensajes.map(msg => (
           <div key={msg.id}>
-            {msg.role === 'push-prompt'
-              ? <PushPromptWidget estado={pushEstado} onActivar={solicitarPermiso} logoUrl={logoUrl} color={colorMarca} />
-              : <BurbujaMensaje mensaje={msg} logoUrl={logoUrl} color={colorMarca} />
-            }
+            <BurbujaMensaje mensaje={msg} logoUrl={logoUrl} color={colorMarca} />
             {msg.role === 'calendar' && negocioId && !confirmedCalendarIds.has(msg.id) && (
               <CalendarioTurnos
                 negocioId={negocioId}
@@ -378,24 +350,12 @@ export default function ChatPage({ params }: { params: { slug: string } }) {
                     next.add(msg.id)
                     return next
                   })
-                  setMensajes(prev => {
-                    const confirmMsg: Mensaje = {
-                      id:        crypto.randomUUID(),
-                      role:      'assistant',
-                      content:   `✓ Turno confirmado: ${label}. ¡Te esperamos!`,
-                      timestamp: new Date(),
-                    }
-                    const msgs = [...prev, confirmMsg]
-                    if (pushEstado !== 'granted') {
-                      msgs.push({
-                        id:        crypto.randomUUID(),
-                        role:      'push-prompt',
-                        content:   '',
-                        timestamp: new Date(),
-                      })
-                    }
-                    return msgs
-                  })
+                  setMensajes(prev => [...prev, {
+                    id:        crypto.randomUUID(),
+                    role:      'assistant',
+                    content:   `✓ Turno confirmado: ${label}. ¡Te esperamos! Podés activar los recordatorios desde el ⚙️ arriba.`,
+                    timestamp: new Date(),
+                  }])
                 }}
               />
             )}
