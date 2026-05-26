@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
       await supabase.from('push_subscriptions').update({ activo: false }).in('id', expiradas)
     }
 
-    // Insert campaign content as a chat message for each client that has a session
+    // Insert campaign message into ALL chat sessions for each client
     const clienteIds = subscriptions.map(s => s.cliente_id).filter(Boolean)
     if (clienteIds.length > 0) {
       const { data: sessions } = await supabase
@@ -127,6 +127,11 @@ export async function POST(req: NextRequest) {
         )
       }
     }
+
+    // Also insert for any unknown sessions (subscriptions with null cliente_id
+    // that have mensajes but no linked session yet)
+    const nullClienteSubs = subscriptions.filter(s => !s.cliente_id)
+    // Nothing to do for these — they have no chat history to inject into
 
     // Save campaign record
     const { data: campania } = await supabase
