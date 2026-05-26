@@ -21,8 +21,8 @@ export const viewport: Viewport = {
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex flex-col min-h-screen max-w-md mx-auto"
-      style={{ background: '#20201F' }}>
+    <div className="flex flex-col max-w-md mx-auto"
+      style={{ background: '#20201F', height: '100dvh', overflow: 'hidden' }}>
       {children}
     </div>
   )

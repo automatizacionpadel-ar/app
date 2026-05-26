@@ -342,7 +342,7 @@ export default function ChatPage({ params }: { params: { slug: string } }) {
   const enviando = loading || uploadingImg
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col" style={{ height: '100dvh', overflow: 'hidden' }}>
 
       {/* Header */}
       <div className="flex-shrink-0" style={{ background: '#2A2A29', borderBottom: '1px solid #3D3D3B' }}>
@@ -414,7 +414,7 @@ export default function ChatPage({ params }: { params: { slug: string } }) {
       </div>
 
       {/* Mensajes */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 scrollbar-hide">
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 scrollbar-hide">
         {mensajes.map(msg => (
           <div key={msg.id}>
             <BurbujaMensaje mensaje={msg} logoUrl={logoUrl} color={colorMarca} />
@@ -445,8 +445,8 @@ export default function ChatPage({ params }: { params: { slug: string } }) {
       </div>
 
       {/* Input */}
-      <div className="flex-shrink-0 px-4 pb-safe-bottom pb-4 pt-2"
-        style={{ background: '#20201F', borderTop: '1px solid #2A2A29' }}>
+      <div className="flex-shrink-0 px-4 pt-2"
+        style={{ background: '#20201F', borderTop: '1px solid #2A2A29', paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)' }}>
 
         {/* Preview de imagen */}
         {imagenPrevia && (
