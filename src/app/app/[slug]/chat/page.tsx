@@ -143,7 +143,7 @@ export default function ChatPage({ params }: { params: { slug: string } }) {
 
     const fetchNew = () => {
       if (document.visibilityState !== 'visible') return
-      fetch(`/api/chat/historial?negocio_id=${negocioId}&chat_id=${chatId}`)
+      fetch(`/api/chat/historial?t=${Date.now()}&negocio_id=${negocioId}&chat_id=${chatId}`)
         .then(r => r.ok ? r.json() : null)
         .then(data => {
           if (!data?.mensajes?.length) return
@@ -185,7 +185,7 @@ export default function ChatPage({ params }: { params: { slug: string } }) {
         setColorMarca(data.color_marca ?? '#7AB619')
 
         // Load message history for this chat session
-        const histRes = await fetch(`/api/chat/historial?negocio_id=${data.id}&chat_id=${chatId}`)
+        const histRes = await fetch(`/api/chat/historial?t=${Date.now()}&negocio_id=${data.id}&chat_id=${chatId}`)
         const histData = histRes.ok ? await histRes.json() : null
         const historial: Mensaje[] = (histData?.mensajes ?? []).map((m: any) => ({
           id:        m.id,

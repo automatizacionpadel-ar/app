@@ -25,5 +25,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Error cargando historial' }, { status: 500 })
   }
 
-  return NextResponse.json({ mensajes: mensajes ?? [] })
+  return NextResponse.json(
+    { mensajes: mensajes ?? [] },
+    { headers: { 'Cache-Control': 'no-store' } }
+  )
 }
