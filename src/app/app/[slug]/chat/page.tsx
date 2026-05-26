@@ -137,27 +137,41 @@ export default function ChatPage({ params }: { params: { slug: string } }) {
       .catch(() => {})
   }, [chatId])
 
-  // Reload messages when tab comes back into focus (e.g. after tapping a push notification)
+  // Poll for new messages every 5s — picks up campaign messages inserted externally
   useEffect(() => {
     if (!negocioId || !chatId) return
-    const handleVisibility = () => {
+
+    const fetchNew = () => {
       if (document.visibilityState !== 'visible') return
       fetch(`/api/chat/historial?negocio_id=${negocioId}&chat_id=${chatId}`)
         .then(r => r.ok ? r.json() : null)
         .then(data => {
-          const msgs: Mensaje[] = (data?.mensajes ?? []).map((m: any) => ({
-            id:        m.id,
-            role:      m.role as 'user' | 'assistant',
-            content:   m.content,
-            imageUrl:  m.image_url ?? undefined,
-            timestamp: new Date(m.created_at),
-          }))
-          if (msgs.length > 0) setMensajes(msgs)
+          if (!data?.mensajes?.length) return
+          setMensajes(prev => {
+            const existingIds = new Set(prev.map(m => m.id))
+            const nuevos = data.mensajes.filter((m: any) => !existingIds.has(m.id))
+            if (nuevos.length === 0) return prev
+            return [
+              ...prev,
+              ...nuevos.map((m: any) => ({
+                id:        m.id,
+                role:      m.role as 'user' | 'assistant',
+                content:   m.content,
+                imageUrl:  m.image_url ?? undefined,
+                timestamp: new Date(m.created_at),
+              })),
+            ]
+          })
         })
         .catch(() => {})
     }
-    document.addEventListener('visibilitychange', handleVisibility)
-    return () => document.removeEventListener('visibilitychange', handleVisibility)
+
+    const interval = setInterval(fetchNew, 5000)
+    document.addEventListener('visibilitychange', fetchNew)
+    return () => {
+      clearInterval(interval)
+      document.removeEventListener('visibilitychange', fetchNew)
+    }
   }, [negocioId, chatId])
 
   useEffect(() => {
@@ -236,15 +250,15 @@ export default function ChatPage({ params }: { params: { slug: string } }) {
       setImagenPrevia(null)
     }
 
-    const msgUsuario: Mensaje = {
-      id:        crypto.randomUUID(),
+    // Use a temp ID — replaced with the real DB ID once the API responds
+    const tempUserMsgId = `tmp-${crypto.randomUUID()}`
+    setMensajes(prev => [...prev, {
+      id:        tempUserMsgId,
       role:      'user',
       content:   textoUsuario,
       imageUrl,
       timestamp: new Date(),
-    }
-
-    setMensajes(prev => [...prev, msgUsuario])
+    }])
     setLoading(true)
 
     try {
@@ -255,20 +269,26 @@ export default function ChatPage({ params }: { params: { slug: string } }) {
       })
       const data = await res.json()
       if (data.cliente_id) setClienteId(data.cliente_id)
+
+      // Replace temp IDs with real DB IDs so the poller doesn't add duplicates
+      setMensajes(prev => prev.map(m =>
+        m.id === tempUserMsgId && data.user_message_id
+          ? { ...m, id: data.user_message_id }
+          : m
+      ))
+
       if (data.action === 'show_calendar') {
-        // Congela el clienteId al momento de mostrar el calendario:
-        // usa el que viene en la respuesta o el que ya estaba en el estado.
         const pidSnapshot = data.cliente_id || clienteId || undefined
         setMensajes(prev => [...prev, {
-          id:          crypto.randomUUID(),
-          role:        'calendar',
-          content:     data.response || '¡Elegí una fecha disponible!',
-          clienteId:   pidSnapshot,
-          timestamp:   new Date(),
+          id:        crypto.randomUUID(),
+          role:      'calendar',
+          content:   data.response || '¡Elegí una fecha disponible!',
+          clienteId: pidSnapshot,
+          timestamp: new Date(),
         }])
       } else {
         setMensajes(prev => [...prev, {
-          id:        crypto.randomUUID(),
+          id:        data.assistant_message_id ?? crypto.randomUUID(),
           role:      'assistant',
           content:   data.response || 'Lo siento, no pude procesar tu mensaje.',
           timestamp: new Date(),

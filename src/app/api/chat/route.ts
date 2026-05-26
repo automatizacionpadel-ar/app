@@ -30,13 +30,13 @@ export async function POST(req: NextRequest) {
     ].filter(Boolean).join('\n')
 
     // Persist user message (cliente_id may be null at this point, updated after response)
-    await supabase.from('mensajes').insert({
+    const { data: userMsg } = await supabase.from('mensajes').insert({
       negocio_id: negocio_id,
       chat_id,
       role:       'user',
       content:    message?.trim() ?? '',
       image_url:  image_url ?? null,
-    })
+    }).select('id').single()
 
     const n8nResponse = await fetch(N8N_BASE_URL, {
       method:  'POST',
@@ -73,13 +73,13 @@ export async function POST(req: NextRequest) {
 
     // Persist assistant response
     const assistantContent = data.response || data.output || 'Sin respuesta del asistente'
-    await supabase.from('mensajes').insert({
+    const { data: assistantMsg } = await supabase.from('mensajes').insert({
       negocio_id: negocio_id,
       cliente_id: resolvedClienteId ?? null,
       chat_id,
       role:    'assistant',
       content: assistantContent,
-    })
+    }).select('id').single()
 
     if (resolvedClienteId && chat_id) {
       await supabase.from('chat_sessions').upsert(
@@ -94,9 +94,11 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({
-      response:   data.response || data.output || 'Sin respuesta del asistente',
-      action:     data.action ?? null,
-      cliente_id: resolvedClienteId,
+      response:          data.response || data.output || 'Sin respuesta del asistente',
+      action:            data.action ?? null,
+      cliente_id:        resolvedClienteId,
+      user_message_id:   userMsg?.id ?? null,
+      assistant_message_id: assistantMsg?.id ?? null,
       chat_id,
     })
   } catch (error) {
