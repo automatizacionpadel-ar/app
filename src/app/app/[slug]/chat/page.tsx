@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Send, Loader2, ArrowLeft, ImagePlus, X, Bell, Settings } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -89,8 +89,10 @@ function TypingIndicator({ logoUrl, color }: { logoUrl: string | null; color: st
 
 
 export default function ChatPage({ params }: { params: { slug: string } }) {
-  const { slug } = params
-  const router   = useRouter()
+  const { slug }       = params
+  const router         = useRouter()
+  const searchParams   = useSearchParams()
+  const campaniaMsgRef = useRef<string | null>(searchParams.get('campania'))
 
   const [chatId] = useState(() => {
     if (typeof window === 'undefined') return ''
@@ -194,6 +196,24 @@ export default function ChatPage({ params }: { params: { slug: string } }) {
           imageUrl:  m.image_url ?? undefined,
           timestamp: new Date(m.created_at),
         }))
+
+        // If opened from a campaign push notification, append that message
+        // (it may not be in this device's chat_id yet)
+        const campaniaTexto = campaniaMsgRef.current
+        if (campaniaTexto) {
+          const yaEsta = historial.some(m => m.content === campaniaTexto && m.role === 'assistant')
+          if (!yaEsta) {
+            historial.push({
+              id:        `campania-${Date.now()}`,
+              role:      'assistant',
+              content:   campaniaTexto,
+              timestamp: new Date(),
+            })
+          }
+          // Clean the URL so reload doesn't re-add it
+          campaniaMsgRef.current = null
+          window.history.replaceState({}, '', `/app/${slug}/chat`)
+        }
 
         if (historial.length > 0) {
           setMensajes(historial)

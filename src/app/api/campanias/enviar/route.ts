@@ -68,16 +68,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ enviados: 0, fallidos: 0 })
     }
 
-    // Notification payload — title only, body is a tap prompt
-    // Full content is delivered as a message in the chat
+    // Full content in the notification body + URL so the chat can show it
+    // regardless of which chat_id the device has in localStorage
+    const chatUrl = `${chatBaseUrl}?campania=${encodeURIComponent(contenido)}`
     const payload = JSON.stringify({
       title: titulo,
-      body:  'Tocá para ver el mensaje completo',
+      body:  contenido,
       icon:  '/logo.png',
       badge: '/logo.png',
       data: {
         tag: 'campania',
-        url: chatBaseUrl,
+        url: chatUrl,
       },
     })
 
