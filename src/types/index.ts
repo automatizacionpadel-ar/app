@@ -48,6 +48,8 @@ export interface Negocio {
   logo_url:             string | null
   sello_url:            string | null
   firma_url:            string | null
+  nombre_negocio:       string | null
+  color_marca:          string | null
   precio_consulta:      number | null
   acepta_agendamientos: boolean
   habilitar_recetas:    boolean

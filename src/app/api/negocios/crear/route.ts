@@ -115,18 +115,14 @@ export async function POST(req: NextRequest) {
 
     if (configError) console.error('Error creando config agente:', configError)
 
-    const faqsValidas = (faqs ?? [])
-      .filter((f: any) => f.pregunta?.trim() && f.respuesta?.trim())
-      .map((f: any, i: number) => ({
+    if (typeof faqs === 'string' && faqs.trim()) {
+      const { error: faqError } = await supabase.from('negocio_faqs').insert({
         negocio_id: negocio.id,
-        pregunta:   f.pregunta.trim(),
-        respuesta:  f.respuesta.trim(),
-        orden:      i,
+        pregunta:   'Preguntas frecuentes',
+        respuesta:  faqs.trim(),
+        orden:      0,
         activo:     true,
-      }))
-
-    if (faqsValidas.length > 0) {
-      const { error: faqError } = await supabase.from('negocio_faqs').insert(faqsValidas)
+      })
       if (faqError) console.error('Error creando FAQs:', faqError)
     }
 

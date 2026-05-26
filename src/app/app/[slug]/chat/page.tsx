@@ -18,21 +18,34 @@ interface Mensaje {
   timestamp:   Date
 }
 
-function BurbujaMensaje({ mensaje }: { mensaje: Mensaje }) {
+function AvatarBot({ logoUrl, color }: { logoUrl: string | null; color: string }) {
+  return (
+    <div className="w-7 h-7 rounded-full flex-shrink-0 overflow-hidden"
+      style={{ background: `${color}26` }}>
+      {logoUrl
+        ? <img src={logoUrl} alt="logo" className="w-full h-full object-cover" />
+        : <div className="w-full h-full flex items-center justify-center">
+            <span style={{ color, fontSize: '12px' }}>IA</span>
+          </div>
+      }
+    </div>
+  )
+}
+
+function BurbujaMensaje({ mensaje, logoUrl, color }: { mensaje: Mensaje; logoUrl: string | null; color: string }) {
   const esUsuario = mensaje.role === 'user'
   return (
     <div className={`flex ${esUsuario ? 'justify-end' : 'justify-start'} mb-3`}>
       {!esUsuario && (
-        <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mr-2 mt-1"
-          style={{ background: 'rgba(122,182,25,0.15)' }}>
-          <span style={{ color: '#7AB619', fontSize: '12px' }}>IA</span>
+        <div className="mr-2 mt-1">
+          <AvatarBot logoUrl={logoUrl} color={color} />
         </div>
       )}
       <div className="max-w-[78%]">
         <div className="rounded-2xl px-4 py-2.5"
           style={{
-            background:   esUsuario ? '#7AB619' : '#2A2A29',
-            color:        esUsuario ? '#20201F' : '#F0F0EE',
+            background:   esUsuario ? color : '#2A2A29',
+            color:        esUsuario ? '#fff' : '#F0F0EE',
             borderRadius: esUsuario ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
           }}>
           {mensaje.imageUrl && (
@@ -56,19 +69,18 @@ function BurbujaMensaje({ mensaje }: { mensaje: Mensaje }) {
   )
 }
 
-function TypingIndicator() {
+function TypingIndicator({ logoUrl, color }: { logoUrl: string | null; color: string }) {
   return (
     <div className="flex justify-start mb-3">
-      <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mr-2"
-        style={{ background: 'rgba(122,182,25,0.15)' }}>
-        <span style={{ color: '#7AB619', fontSize: '12px' }}>IA</span>
+      <div className="mr-2">
+        <AvatarBot logoUrl={logoUrl} color={color} />
       </div>
       <div className="rounded-2xl px-4 py-3"
         style={{ background: '#2A2A29', borderRadius: '18px 18px 18px 4px' }}>
         <div className="flex gap-1 items-center h-4">
           {[0, 1, 2].map(i => (
             <div key={i} className="w-1.5 h-1.5 rounded-full animate-bounce"
-              style={{ background: '#7AB619', animationDelay: `${i * 150}ms` }} />
+              style={{ background: color, animationDelay: `${i * 150}ms` }} />
           ))}
         </div>
       </div>
@@ -77,22 +89,23 @@ function TypingIndicator() {
 }
 
 function PushPromptWidget({
-  estado, onActivar,
+  estado, onActivar, logoUrl, color,
 }: {
   estado:   ReturnType<typeof usePushNotifications>['estado']
   onActivar: () => void
+  logoUrl:  string | null
+  color:    string
 }) {
   if (estado === 'granted') {
     return (
       <div className="flex justify-start mb-3">
-        <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mr-2 mt-1"
-          style={{ background: 'rgba(122,182,25,0.15)' }}>
-          <span style={{ color: '#7AB619', fontSize: '12px' }}>IA</span>
+        <div className="mr-2 mt-1">
+          <AvatarBot logoUrl={logoUrl} color={color} />
         </div>
         <div className="flex items-center gap-2 rounded-2xl px-4 py-2.5"
-          style={{ background: 'rgba(122,182,25,0.12)', border: '1px solid rgba(122,182,25,0.25)' }}>
-          <CheckCircle size={15} style={{ color: '#7AB619', flexShrink: 0 }} />
-          <p className="text-sm" style={{ color: '#7AB619' }}>Notificaciones activadas ✓</p>
+          style={{ background: `${color}1A`, border: `1px solid ${color}40` }}>
+          <CheckCircle size={15} style={{ color, flexShrink: 0 }} />
+          <p className="text-sm" style={{ color }}>Notificaciones activadas ✓</p>
         </div>
       </div>
     )
@@ -101,9 +114,8 @@ function PushPromptWidget({
   if (estado === 'denied') {
     return (
       <div className="flex justify-start mb-3">
-        <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mr-2 mt-1"
-          style={{ background: 'rgba(122,182,25,0.15)' }}>
-          <span style={{ color: '#7AB619', fontSize: '12px' }}>IA</span>
+        <div className="mr-2 mt-1">
+          <AvatarBot logoUrl={logoUrl} color={color} />
         </div>
         <div className="rounded-2xl px-4 py-3 max-w-[78%]"
           style={{ background: '#2A2A29', borderRadius: '18px 18px 18px 4px' }}>
@@ -121,9 +133,8 @@ function PushPromptWidget({
 
   return (
     <div className="flex justify-start mb-3">
-      <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mr-2 mt-1"
-        style={{ background: 'rgba(122,182,25,0.15)' }}>
-        <span style={{ color: '#7AB619', fontSize: '12px' }}>IA</span>
+      <div className="mr-2 mt-1">
+        <AvatarBot logoUrl={logoUrl} color={color} />
       </div>
       <div className="rounded-2xl px-4 py-3 max-w-[80%]"
         style={{ background: '#2A2A29', borderRadius: '18px 18px 18px 4px' }}>
@@ -134,7 +145,7 @@ function PushPromptWidget({
           onClick={onActivar}
           disabled={estado === 'loading'}
           className="flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all active:scale-95 disabled:opacity-60"
-          style={{ background: '#7AB619', color: '#20201F' }}>
+          style={{ background: color, color: '#fff' }}>
           {estado === 'loading'
             ? <><Loader2 size={14} className="animate-spin" /> Activando...</>
             : <><Bell size={14} /> Activar recordatorios</>
@@ -150,6 +161,8 @@ export default function ChatPage({ params }: { params: { slug: string } }) {
   const router   = useRouter()
 
   const [negocioId,  setNegocioId]  = useState<string | null>(null)
+  const [logoUrl,    setLogoUrl]    = useState<string | null>(null)
+  const [colorMarca, setColorMarca] = useState('#7AB619')
   const [clienteId,  setClienteId]  = useState<string | null>(null)
   const [mensajes,    setMensajes]    = useState<Mensaje[]>([])
   const [input,       setInput]       = useState('')
@@ -197,6 +210,8 @@ export default function ChatPage({ params }: { params: { slug: string } }) {
       .then(data => {
         if (data.id) {
           setNegocioId(data.id)
+          setLogoUrl(data.logo_url ?? null)
+          setColorMarca(data.color_marca ?? '#7AB619')
           setMensajes([{
             id:        'welcome',
             role:      'assistant',
@@ -323,15 +338,20 @@ export default function ChatPage({ params }: { params: { slug: string } }) {
         <button onClick={() => router.back()} className="rounded-lg p-1.5" style={{ color: '#5C5C59' }}>
           <ArrowLeft size={18} />
         </button>
-        <div className="w-8 h-8 rounded-full flex items-center justify-center"
-          style={{ background: 'rgba(122,182,25,0.15)' }}>
-          <span style={{ color: '#7AB619', fontSize: '14px', fontWeight: 600 }}>IA</span>
+        <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0"
+          style={{ background: `${colorMarca}26` }}>
+          {logoUrl
+            ? <img src={logoUrl} alt="logo" className="w-full h-full object-cover" />
+            : <div className="w-full h-full flex items-center justify-center">
+                <span style={{ color: colorMarca, fontSize: '14px', fontWeight: 600 }}>IA</span>
+              </div>
+          }
         </div>
         <div>
           <p className="text-sm font-semibold" style={{ color: '#F0F0EE' }}>Asistente</p>
           <div className="flex items-center gap-1">
-            <div className="w-1.5 h-1.5 rounded-full" style={{ background: '#7AB619' }} />
-            <p className="text-xs" style={{ color: '#7AB619' }}>En línea</p>
+            <div className="w-1.5 h-1.5 rounded-full" style={{ background: colorMarca }} />
+            <p className="text-xs" style={{ color: colorMarca }}>En línea</p>
           </div>
         </div>
         <div className="ml-auto">
@@ -344,8 +364,8 @@ export default function ChatPage({ params }: { params: { slug: string } }) {
         {mensajes.map(msg => (
           <div key={msg.id}>
             {msg.role === 'push-prompt'
-              ? <PushPromptWidget estado={pushEstado} onActivar={solicitarPermiso} />
-              : <BurbujaMensaje mensaje={msg} />
+              ? <PushPromptWidget estado={pushEstado} onActivar={solicitarPermiso} logoUrl={logoUrl} color={colorMarca} />
+              : <BurbujaMensaje mensaje={msg} logoUrl={logoUrl} color={colorMarca} />
             }
             {msg.role === 'calendar' && negocioId && !confirmedCalendarIds.has(msg.id) && (
               <CalendarioTurnos
@@ -381,7 +401,7 @@ export default function ChatPage({ params }: { params: { slug: string } }) {
             )}
           </div>
         ))}
-        {enviando && <TypingIndicator />}
+        {enviando && <TypingIndicator logoUrl={logoUrl} color={colorMarca} />}
         <div ref={bottomRef} />
       </div>
 
@@ -445,7 +465,7 @@ export default function ChatPage({ params }: { params: { slug: string } }) {
             onClick={enviarMensaje}
             disabled={enviando || (!input.trim() && !imagenPrevia)}
             className="rounded-xl p-2.5 flex-shrink-0 transition-all active:scale-90 disabled:opacity-40"
-            style={{ background: '#7AB619', color: '#20201F', marginBottom: '2px' }}>
+            style={{ background: colorMarca, color: '#fff', marginBottom: '2px' }}>
             {enviando ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
           </button>
         </div>

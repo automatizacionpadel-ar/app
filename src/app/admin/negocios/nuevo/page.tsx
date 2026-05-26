@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Briefcase, Clock, CreditCard, Bot,
-  HelpCircle, Plus, Trash2, ChevronLeft,
+  HelpCircle, ChevronLeft,
   CheckCircle, AlertCircle, Eye, EyeOff
 } from 'lucide-react'
 
@@ -95,7 +95,7 @@ export default function NuevoNegocioPage() {
     mensaje_confirmacion: 'Tu cita está confirmada para el {{fecha}} a las {{hora}}hs. ¡Te esperamos!',
     mensaje_recordatorio: 'Te recordamos tu cita mañana {{fecha}} a las {{hora}}hs.',
     mensaje_cancelacion: 'Tu cita del {{fecha}} fue cancelada.',
-    faqs: [{ pregunta: '', respuesta: '' }],
+    faqs: '',
     email_acceso: '', password_acceso: '',
   })
 
@@ -108,22 +108,6 @@ export default function NuevoNegocioPage() {
       ...prev,
       horarios: { ...prev.horarios, [dia]: { ...prev.horarios[dia], [campo]: valor } }
     }))
-  }
-
-  function agregarFaq() {
-    setForm(prev => ({ ...prev, faqs: [...prev.faqs, { pregunta: '', respuesta: '' }] }))
-  }
-
-  function setFaq(i: number, campo: string, valor: string) {
-    setForm(prev => {
-      const faqs = [...prev.faqs]
-      faqs[i] = { ...faqs[i], [campo]: valor }
-      return { ...prev, faqs }
-    })
-  }
-
-  function eliminarFaq(i: number) {
-    setForm(prev => ({ ...prev, faqs: prev.faqs.filter((_, idx) => idx !== i) }))
   }
 
   async function handleSubmit() {
@@ -370,38 +354,25 @@ export default function NuevoNegocioPage() {
 
         {paso === 5 && (
           <>
-            <SeccionHeader icono={<HelpCircle size={18} />} titulo="Preguntas frecuentes" subtitulo="El agente usará estas respuestas automáticamente" />
-            <div className="space-y-4">
-              {form.faqs.map((faq, i) => (
-                <div key={i} className="rounded-lg p-4"
-                  style={{ background: '#20201F', border: '1px solid #3D3D3B' }}>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs font-medium" style={{ color: '#5C5C59' }}>
-                      Pregunta {i + 1}
-                    </span>
-                    {form.faqs.length > 1 && (
-                      <button onClick={() => eliminarFaq(i)}
-                        className="p-1 rounded transition-colors"
-                        style={{ color: '#5C5C59' }}
-                        onMouseEnter={e => (e.currentTarget.style.color = '#EF4444')}
-                        onMouseLeave={e => (e.currentTarget.style.color = '#5C5C59')}>
-                        <Trash2 size={13} />
-                      </button>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Input value={faq.pregunta} onChange={e => setFaq(i, 'pregunta', e.target.value)} placeholder="¿Cuánto dura el turno?" />
-                    <Textarea value={faq.respuesta} onChange={e => setFaq(i, 'respuesta', e.target.value)} placeholder="El turno tiene una duración de 30 minutos." rows={2} />
-                  </div>
-                </div>
-              ))}
-              <button onClick={agregarFaq}
-                className="w-full flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm transition-all"
-                style={{ border: '1px dashed #3D3D3B', color: '#5C5C59' }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = '#7AB619'; e.currentTarget.style.color = '#7AB619' }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = '#3D3D3B'; e.currentTarget.style.color = '#5C5C59' }}>
-                <Plus size={15} /> Agregar pregunta
-              </button>
+            <SeccionHeader icono={<HelpCircle size={18} />} titulo="Preguntas frecuentes" subtitulo="El agente usará este contenido como base de conocimiento" />
+            <div className="space-y-3">
+              <Campo
+                label="Contenido en Markdown"
+                hint="Podés usar # encabezados, **negrita**, listas con -, etc. El agente leerá este texto para responder preguntas frecuentes."
+              >
+                <Textarea
+                  value={form.faqs}
+                  onChange={e => setField('faqs', e.target.value)}
+                  placeholder={`## Preguntas frecuentes\n\n**¿Cuánto dura el turno?**\nEl turno tiene una duración de 30 minutos.\n\n**¿Cómo cancelo un turno?**\nPodés cancelar hasta 24hs antes sin cargo.`}
+                  rows={14}
+                />
+              </Campo>
+              <div className="rounded-lg px-4 py-3"
+                style={{ background: '#20201F', border: '1px solid #3D3D3B' }}>
+                <p className="text-xs font-mono" style={{ color: '#5C5C59' }}>
+                  # Título &nbsp;|&nbsp; ## Subtítulo &nbsp;|&nbsp; **negrita** &nbsp;|&nbsp; - lista &nbsp;|&nbsp; [enlace](url)
+                </p>
+              </div>
             </div>
           </>
         )}

@@ -8,7 +8,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import clsx from 'clsx'
 import {
-  LayoutDashboard, Calendar, Users, Megaphone,
+  LayoutDashboard, MessageSquare, Users, Megaphone,
   Settings, LogOut, ChevronLeft, ChevronRight,
   Briefcase,
 } from 'lucide-react'
@@ -22,12 +22,12 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Dashboard',    href: '/dashboard',          icon: <LayoutDashboard size={18} /> },
-  { label: 'Calendario',   href: '/dashboard/calendario', icon: <Calendar size={18} />,   clienteOnly: true },
-  { label: 'Clientes',     href: '/dashboard/clientes',  icon: <Users size={18} />,       clienteOnly: true },
-  { label: 'Campañas',     href: '/dashboard/campanias', icon: <Megaphone size={18} />,   clienteOnly: true },
+  { label: 'Dashboard',    href: '/dashboard',              icon: <LayoutDashboard size={18} /> },
+  { label: 'Mensajería',   href: '/dashboard/mensajeria',  icon: <MessageSquare size={18} />, clienteOnly: true },
+  { label: 'Clientes',     href: '/dashboard/clientes',    icon: <Users size={18} />,         clienteOnly: true },
+  { label: 'Campañas',     href: '/dashboard/campanias',   icon: <Megaphone size={18} />,     clienteOnly: true },
   { label: 'Negocios',     href: '/admin/negocios',      icon: <Briefcase size={18} />,   adminOnly: true },
-  { label: 'Configuración', href: '/dashboard/config',   icon: <Settings size={18} /> },
+  { label: 'Configuración', href: '/dashboard/config',   icon: <Settings size={18} />, clienteOnly: true },
 ]
 
 interface SidebarProps {
@@ -43,8 +43,7 @@ export default function Sidebar({ rol, nombreNegocio }: SidebarProps) {
   async function handleLogout() {
     const supabase = createClient()
     await supabase.auth.signOut()
-    router.push('/login')
-    router.refresh()
+    window.location.href = '/login'
   }
 
   const isAdmin = rol === 'superadmin'

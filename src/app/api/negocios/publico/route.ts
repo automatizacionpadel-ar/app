@@ -20,6 +20,8 @@ export async function GET(req: NextRequest) {
         rubro,
         direccion,
         telefono,
+        logo_url,
+        color_marca,
         activo,
         negocio_agente_config (
           mensaje_bienvenida
@@ -42,6 +44,8 @@ export async function GET(req: NextRequest) {
       rubro:              negocio.rubro,
       direccion:          negocio.direccion,
       telefono:           negocio.telefono,
+      logo_url:           negocio.logo_url    ?? null,
+      color_marca:        negocio.color_marca ?? '#7AB619',
       mensaje_bienvenida: config?.mensaje_bienvenida ?? null,
     })
   } catch (error) {

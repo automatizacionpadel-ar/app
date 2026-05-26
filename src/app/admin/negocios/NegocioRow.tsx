@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Briefcase, CheckCircle, XCircle, FileText } from 'lucide-react'
+import { Briefcase, CheckCircle, XCircle, FileText, Settings } from 'lucide-react'
+import Link from 'next/link'
 
 export function NegocioRow({ negocio }: {
   negocio: {
@@ -62,6 +63,12 @@ export function NegocioRow({ negocio }: {
           style={{ background: '#20201F', color: '#5C5C59' }}>
           {negocio.webhook_token.slice(0, 12)}...
         </code>
+        <Link href={`/admin/negocios/${negocio.id}`}
+          className="flex items-center gap-1.5 text-xs rounded-lg px-3 py-1.5 transition-all"
+          style={{ background: 'rgba(122,182,25,0.1)', color: '#7AB619', border: '1px solid rgba(122,182,25,0.2)' }}>
+          <Settings size={12} />
+          Configurar
+        </Link>
       </div>
     </div>
   )

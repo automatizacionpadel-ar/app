@@ -1,6 +1,27 @@
 // src/app/api/negocios/actualizar/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { slugify } from '@/lib/slugify'
+
+async function generateUniqueSlug(
+  supabase: ReturnType<typeof createAdminClient>,
+  nombre: string,
+  excludeId: string
+): Promise<string> {
+  const base = slugify(nombre) || 'negocio'
+  let candidate = base
+  let i = 2
+  while (true) {
+    const { data } = await supabase
+      .from('negocios')
+      .select('id')
+      .eq('slug', candidate)
+      .neq('id', excludeId)
+      .maybeSingle()
+    if (!data) return candidate
+    candidate = `${base}-${i++}`
+  }
+}
 
 export async function PATCH(req: NextRequest) {
   try {
@@ -32,7 +53,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     const {
-      nombre, telefono, direccion,
+      nombre, nombre_negocio, color_marca, telefono, direccion,
       foto_perfil_url, logo_url, sello_url, firma_url,
       horarios,
       precio_consulta, requiere_sena, monto_sena,
@@ -40,10 +61,17 @@ export async function PATCH(req: NextRequest) {
       acepta_agendamientos,
     } = body
 
+    const admin = createAdminClient()
+    const slugSource = nombre_negocio || nombre
+    const nuevoSlug = slugSource ? await generateUniqueSlug(admin, slugSource, negocio.id) : undefined
+
     const { error: updateError } = await supabase
       .from('negocios')
       .update({
         nombre,
+        nombre_negocio:      nombre_negocio  ?? null,
+        color_marca:         color_marca     ?? null,
+        ...(nuevoSlug ? { slug: nuevoSlug } : {}),
         telefono:            telefono        || null,
         direccion:           direccion       || null,
         foto_perfil_url:     foto_perfil_url ?? null,
@@ -61,7 +89,7 @@ export async function PATCH(req: NextRequest) {
       .eq('id', negocio.id)
 
     if (updateError) return NextResponse.json({ error: 'Error al actualizar' }, { status: 500 })
-    return NextResponse.json({ ok: true })
+    return NextResponse.json({ ok: true, slug: nuevoSlug })
   } catch (error) {
     console.error('Error en /api/negocios/actualizar:', error)
     return NextResponse.json({ error: 'Error interno' }, { status: 500 })

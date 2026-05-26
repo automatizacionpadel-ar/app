@@ -29,6 +29,15 @@ export async function POST(req: NextRequest) {
       image_url ? `[Imagen adjunta: ${image_url}]` : '',
     ].filter(Boolean).join('\n')
 
+    // Persist user message (cliente_id may be null at this point, updated after response)
+    await supabase.from('mensajes').insert({
+      negocio_id: negocio_id,
+      chat_id,
+      role:       'user',
+      content:    message?.trim() ?? '',
+      image_url:  image_url ?? null,
+    })
+
     const n8nResponse = await fetch(N8N_BASE_URL, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -58,15 +67,30 @@ export async function POST(req: NextRequest) {
         .select('id')
         .eq('negocio_id', negocio_id)
         .eq('celular', data.celular)
-        .single()
+        .maybeSingle()
       resolvedClienteId = cli?.id ?? null
     }
+
+    // Persist assistant response
+    const assistantContent = data.response || data.output || 'Sin respuesta del asistente'
+    await supabase.from('mensajes').insert({
+      negocio_id: negocio_id,
+      cliente_id: resolvedClienteId ?? null,
+      chat_id,
+      role:    'assistant',
+      content: assistantContent,
+    })
 
     if (resolvedClienteId && chat_id) {
       await supabase.from('chat_sessions').upsert(
         { chat_id, cliente_id: resolvedClienteId, negocio_id, updated_at: new Date().toISOString() },
         { onConflict: 'chat_id' }
       )
+      // Backfill cliente_id on the user message we just saved
+      await supabase.from('mensajes')
+        .update({ cliente_id: resolvedClienteId })
+        .eq('chat_id', chat_id)
+        .is('cliente_id', null)
     }
 
     return NextResponse.json({

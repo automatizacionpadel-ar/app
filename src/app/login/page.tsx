@@ -2,13 +2,13 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { Eye, EyeOff, LogIn, AlertCircle } from 'lucide-react'
 
 export default function LoginPage() {
-  const router = useRouter()
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -35,8 +35,7 @@ export default function LoginPage() {
       .eq('id', authData.user.id)
       .single()
 
-    router.push(usuario?.rol === 'superadmin' ? '/admin' : '/dashboard')
-    router.refresh()
+    window.location.href = usuario?.rol === 'superadmin' ? '/admin' : '/dashboard'
   }
 
   return (

@@ -2,8 +2,9 @@
 'use client'
 
 import { useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { User, Calendar, Briefcase, Stethoscope, Upload, CheckCircle, AlertCircle, FileSignature } from 'lucide-react'
+import { User, Calendar, Stethoscope, Upload, CheckCircle, AlertCircle, FileSignature, Link2, Palette } from 'lucide-react'
 import type { Negocio, HorarioDia } from '@/types'
 
 const DIAS = ['lunes','martes','miercoles','jueves','viernes','sabado','domingo'] as const
@@ -157,9 +158,151 @@ function ImageUpload({ label, hint, value, storagePath, onUploaded, shape }: {
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 
-export default function ConfigCliente({ negocio }: { negocio: Negocio }) {
+const COLORES_PRESET = [
+  '#7AB619', '#3B82F6', '#8B5CF6', '#EC4899',
+  '#F59E0B', '#EF4444', '#10B981', '#F97316',
+  '#06B6D4', '#6366F1', '#84CC16', '#E11D48',
+]
+
+function IPhoneMockup({ color, logoUrl }: { color: string; logoUrl: string | null }) {
+  return (
+    <div className="flex flex-col items-center select-none" style={{ userSelect: 'none' }}>
+      {/* Phone shell */}
+      <div className="relative flex flex-col"
+        style={{
+          width: 260, height: 520,
+          background: '#1A1A19',
+          borderRadius: 36,
+          border: '6px solid #3D3D3B',
+          boxShadow: '0 0 0 1px #2A2A29, 0 20px 40px rgba(0,0,0,0.5)',
+          overflow: 'hidden',
+        }}>
+
+        {/* Dynamic island */}
+        <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
+          <div style={{ width: 80, height: 22, background: '#000', borderRadius: 12 }} />
+        </div>
+
+        {/* Chat header */}
+        <div className="flex items-center gap-2 px-3 py-2 flex-shrink-0"
+          style={{ background: '#2A2A29', borderBottom: '1px solid #3D3D3B' }}>
+          <div className="w-6 h-6 rounded-full overflow-hidden flex-shrink-0"
+            style={{ background: `${color}22` }}>
+            {logoUrl
+              ? <img src={logoUrl} alt="" className="w-full h-full object-cover" />
+              : <div className="w-full h-full flex items-center justify-center"
+                  style={{ fontSize: 8, color, fontWeight: 700 }}>IA</div>
+            }
+          </div>
+          <div>
+            <p style={{ fontSize: 9, color: '#F0F0EE', fontWeight: 600, lineHeight: 1 }}>Asistente</p>
+            <p style={{ fontSize: 7, color, lineHeight: 1.4 }}>● En línea</p>
+          </div>
+        </div>
+
+        {/* Messages */}
+        <div className="flex-1 px-2.5 py-2 flex flex-col gap-1.5 overflow-hidden">
+
+          {/* Bot bubble */}
+          <div className="flex items-end gap-1">
+            <div className="w-5 h-5 rounded-full overflow-hidden flex-shrink-0"
+              style={{ background: `${color}22` }}>
+              {logoUrl
+                ? <img src={logoUrl} alt="" className="w-full h-full object-cover" />
+                : <div className="w-full h-full flex items-center justify-center"
+                    style={{ fontSize: 6, color }}>IA</div>
+              }
+            </div>
+            <div className="rounded-xl px-2.5 py-1.5 max-w-[75%]"
+              style={{ background: '#2A2A29', borderRadius: '10px 10px 10px 3px' }}>
+              <p style={{ fontSize: 8, color: '#F0F0EE', lineHeight: 1.4 }}>
+                ¡Hola! ¿En qué te puedo ayudar hoy?
+              </p>
+            </div>
+          </div>
+
+          {/* User bubble */}
+          <div className="flex justify-end">
+            <div className="rounded-xl px-2.5 py-1.5 max-w-[75%]"
+              style={{ background: color, borderRadius: '10px 10px 3px 10px' }}>
+              <p style={{ fontSize: 8, color: '#fff', lineHeight: 1.4 }}>
+                Quiero sacar un turno
+              </p>
+            </div>
+          </div>
+
+          {/* Bot bubble 2 */}
+          <div className="flex items-end gap-1">
+            <div className="w-5 h-5 rounded-full overflow-hidden flex-shrink-0"
+              style={{ background: `${color}22` }}>
+              {logoUrl
+                ? <img src={logoUrl} alt="" className="w-full h-full object-cover" />
+                : <div className="w-full h-full flex items-center justify-center"
+                    style={{ fontSize: 6, color }}>IA</div>
+              }
+            </div>
+            <div className="rounded-xl px-2.5 py-1.5 max-w-[75%]"
+              style={{ background: '#2A2A29', borderRadius: '10px 10px 10px 3px' }}>
+              <p style={{ fontSize: 8, color: '#F0F0EE', lineHeight: 1.4 }}>
+                ¡Claro! ¿Para qué día preferís?
+              </p>
+            </div>
+          </div>
+
+          {/* User bubble 2 */}
+          <div className="flex justify-end">
+            <div className="rounded-xl px-2.5 py-1.5 max-w-[75%]"
+              style={{ background: color, borderRadius: '10px 10px 3px 10px' }}>
+              <p style={{ fontSize: 8, color: '#fff', lineHeight: 1.4 }}>
+                El jueves a la tarde
+              </p>
+            </div>
+          </div>
+
+          {/* Bot bubble 3 */}
+          <div className="flex items-end gap-1">
+            <div className="w-5 h-5 rounded-full overflow-hidden flex-shrink-0"
+              style={{ background: `${color}22` }}>
+              {logoUrl
+                ? <img src={logoUrl} alt="" className="w-full h-full object-cover" />
+                : <div className="w-full h-full flex items-center justify-center"
+                    style={{ fontSize: 6, color }}>IA</div>
+              }
+            </div>
+            <div className="rounded-xl px-2.5 py-1.5 max-w-[80%]"
+              style={{ background: '#2A2A29', borderRadius: '10px 10px 10px 3px' }}>
+              <p style={{ fontSize: 8, color: '#F0F0EE', lineHeight: 1.4 }}>
+                Tengo disponible las 16:00 y 17:30 hs. ¿Cuál te viene mejor?
+              </p>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Input bar */}
+        <div className="px-2 pb-3 pt-1.5 flex-shrink-0"
+          style={{ background: '#20201F', borderTop: '1px solid #2A2A29' }}>
+          <div className="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5"
+            style={{ background: '#2A2A29', border: '1px solid #3D3D3B' }}>
+            <p style={{ fontSize: 8, color: '#5C5C59', flex: 1 }}>Escribí tu mensaje...</p>
+            <div className="rounded-lg p-1" style={{ background: color }}>
+              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default function ConfigCliente({ negocio, negocioId }: { negocio: Negocio; negocioId?: string }) {
+  const router = useRouter()
+  const [slug, setSlug] = useState(negocio.slug ?? '')
   const [form, setForm] = useState(() => ({
     nombre:               negocio.nombre,
+    nombre_negocio:       negocio.nombre_negocio       ?? '',
     telefono:             negocio.telefono             ?? '',
     direccion:            negocio.direccion            ?? '',
     foto_perfil_url:      negocio.foto_perfil_url      as string | null,
@@ -178,6 +321,7 @@ export default function ConfigCliente({ negocio }: { negocio: Negocio }) {
     cbu:                  negocio.cbu                  ?? '',
     alias_mp:             negocio.alias_mp             ?? '',
     acepta_agendamientos: negocio.acepta_agendamientos,
+    color_marca:          negocio.color_marca ?? '#7AB619',
   }))
 
   const [loading, setLoading] = useState(false)
@@ -226,7 +370,9 @@ export default function ConfigCliente({ negocio }: { negocio: Negocio }) {
         method:  'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          ...(negocioId ? { negocio_id: negocioId } : {}),
           nombre:               form.nombre,
+          nombre_negocio:       form.nombre_negocio || null,
           telefono:             form.telefono     || null,
           direccion:            form.direccion    || null,
           foto_perfil_url:      form.foto_perfil_url,
@@ -242,12 +388,15 @@ export default function ConfigCliente({ negocio }: { negocio: Negocio }) {
           cbu:                  form.cbu     || null,
           alias_mp:             form.alias_mp || null,
           acepta_agendamientos: form.acepta_agendamientos,
+          color_marca:          form.color_marca,
         }),
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error ?? 'Error al guardar'); return }
+      if (data.slug) setSlug(data.slug)
       setExito(true)
       setTimeout(() => setExito(false), 3000)
+      router.refresh()
     } catch {
       setError('Error de conexión')
     } finally {
@@ -296,6 +445,14 @@ export default function ConfigCliente({ negocio }: { negocio: Negocio }) {
             />
           </Campo>
 
+          <Campo label="Negocio">
+            <Input
+              value={form.nombre_negocio}
+              onChange={e => setField('nombre_negocio', e.target.value)}
+              placeholder="ej: dr-garcia — define la URL del chat"
+            />
+          </Campo>
+
           <Campo label="Celular">
             <Input
               value={form.telefono}
@@ -311,6 +468,33 @@ export default function ConfigCliente({ negocio }: { negocio: Negocio }) {
               placeholder="Av. Corrientes 1234, CABA"
             />
           </Campo>
+
+          {slug && (
+            <div className="flex items-center gap-3 rounded-lg px-4 py-3"
+              style={{ background: '#20201F', border: '1px solid #3D3D3B' }}>
+              <Link2 size={14} style={{ color: '#7AB619', flexShrink: 0 }} />
+              <div className="min-w-0 flex-1">
+                <p className="text-xs mb-0.5" style={{ color: '#5C5C59' }}>Link público del negocio</p>
+                <a
+                  href={`/app/${slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-mono truncate block"
+                  style={{ color: '#7AB619' }}
+                >
+                  /app/{slug}
+                </a>
+              </div>
+              <button
+                type="button"
+                onClick={() => navigator.clipboard.writeText(`${window.location.origin}/app/${slug}`)}
+                className="text-xs rounded px-2 py-1 flex-shrink-0 transition-opacity hover:opacity-70"
+                style={{ background: '#3D3D3B', color: '#9A9A96' }}
+              >
+                Copiar
+              </button>
+            </div>
+          )}
         </SectionCard>
 
         {/* ── Sección 2: Horarios ── */}
@@ -365,7 +549,7 @@ export default function ConfigCliente({ negocio }: { negocio: Negocio }) {
         <SectionCard icon={<Stethoscope size={18} />} color="#F59E0B"
           titulo="Propiedades de Citas" subtitulo="Costos y disponibilidad de agendamiento">
 
-          <Campo label="Precio de la consulta">
+          <Campo label="Precio de la cita">
             <div className="flex items-center gap-2">
               <span className="text-sm font-semibold" style={{ color: '#5C5C59' }}>$</span>
               <Input
@@ -447,31 +631,106 @@ export default function ConfigCliente({ negocio }: { negocio: Negocio }) {
         </SectionCard>
 
         {/* ── Sección 4: Recetas Médicas ── */}
-        <SectionCard icon={<FileSignature size={18} />} color="#8B5CF6"
-          titulo="Recetas Médicas" subtitulo="Imágenes que aparecerán en los PDF de recetas que envíes a tus pacientes">
+        {negocio.habilitar_recetas && (
+          <SectionCard icon={<FileSignature size={18} />} color="#8B5CF6"
+            titulo="Recetas Médicas" subtitulo="Imágenes que aparecerán en los PDF de recetas que envíes a tus pacientes">
 
-          <div className="grid grid-cols-2 gap-6">
-            <ImageUpload
-              label="Sello húmedo"
-              hint="Usá fondo blanco o transparente · máx. 2MB"
-              value={form.sello_url}
-              storagePath={`${negocio.id}/sello.jpg`}
-              onUploaded={url => setField('sello_url', url)}
-              shape="square"
-            />
-            <ImageUpload
-              label="Firma digital"
-              hint="Usá fondo blanco o transparente · máx. 2MB"
-              value={form.firma_url}
-              storagePath={`${negocio.id}/firma.jpg`}
-              onUploaded={url => setField('firma_url', url)}
-              shape="square"
-            />
-          </div>
+            <div className="grid grid-cols-2 gap-6">
+              <ImageUpload
+                label="Sello húmedo"
+                hint="Usá fondo blanco o transparente · máx. 2MB"
+                value={form.sello_url}
+                storagePath={`${negocio.id}/sello.jpg`}
+                onUploaded={url => setField('sello_url', url)}
+                shape="square"
+              />
+              <ImageUpload
+                label="Firma digital"
+                hint="Usá fondo blanco o transparente · máx. 2MB"
+                value={form.firma_url}
+                storagePath={`${negocio.id}/firma.jpg`}
+                onUploaded={url => setField('firma_url', url)}
+                shape="square"
+              />
+            </div>
 
-          <div className="rounded-lg px-4 py-3 text-xs"
-            style={{ background: '#20201F', border: '1px solid #3D3D3B', color: '#5C5C59' }}>
-            Estas imágenes se incluyen automáticamente al pie de cada receta PDF que generes desde la sección de Pacientes.
+            <div className="rounded-lg px-4 py-3 text-xs"
+              style={{ background: '#20201F', border: '1px solid #3D3D3B', color: '#5C5C59' }}>
+              Estas imágenes se incluyen automáticamente al pie de cada receta PDF que generes desde la sección de Pacientes.
+            </div>
+          </SectionCard>
+        )}
+
+        {/* ── Sección 5: Color del chat ── */}
+        <SectionCard icon={<Palette size={18} />} color="#EC4899"
+          titulo="Color del Chat" subtitulo="Personalizá el color de las burbujas del asistente">
+
+          <div className="flex gap-8 items-start justify-center">
+
+            {/* Paleta */}
+            <div className="flex flex-col gap-4" style={{ width: '38%' }}>
+              <p className="text-xs" style={{ color: '#9A9A96' }}>Elegí un color predefinido</p>
+              <div className="grid grid-cols-6 gap-1.5">
+                {COLORES_PRESET.map(c => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setField('color_marca', c)}
+                    className="rounded-md transition-transform active:scale-90"
+                    style={{
+                      width: 28, height: 28,
+                      background: c,
+                      border: form.color_marca === c ? '3px solid #F0F0EE' : '3px solid transparent',
+                      boxShadow: form.color_marca === c ? `0 0 0 1px ${c}` : 'none',
+                    }}
+                  />
+                ))}
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <p className="text-xs" style={{ color: '#9A9A96' }}>O ingresá un color personalizado</p>
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <input
+                      type="color"
+                      value={form.color_marca}
+                      onChange={e => setField('color_marca', e.target.value)}
+                      className="rounded-lg cursor-pointer"
+                      style={{ width: 44, height: 44, padding: 3, background: '#20201F', border: '1px solid #3D3D3B' }}
+                    />
+                  </div>
+                  <Input
+                    value={form.color_marca}
+                    onChange={e => setField('color_marca', e.target.value)}
+                    placeholder="#7AB619"
+                    style={{ width: 120, fontFamily: 'monospace' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setField('color_marca', '#7AB619')}
+                    className="text-xs rounded-lg px-3 py-2 transition-opacity hover:opacity-70"
+                    style={{ background: '#3D3D3B', color: '#9A9A96', whiteSpace: 'nowrap' }}>
+                    Restablecer
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 rounded-lg px-4 py-3"
+                style={{ background: '#20201F', border: '1px solid #3D3D3B' }}>
+                <div className="w-8 h-8 rounded-full flex-shrink-0"
+                  style={{ background: form.color_marca }} />
+                <div>
+                  <p className="text-sm font-medium" style={{ color: '#F0F0EE' }}>Color seleccionado</p>
+                  <p className="text-xs font-mono" style={{ color: '#5C5C59' }}>{form.color_marca}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Mockup iPhone */}
+            <div className="flex items-start justify-center" style={{ width: '62%' }}>
+              <IPhoneMockup color={form.color_marca} logoUrl={form.logo_url} />
+            </div>
+
           </div>
         </SectionCard>
 
