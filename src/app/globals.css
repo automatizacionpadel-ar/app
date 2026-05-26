@@ -47,12 +47,15 @@ html {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  height: 100dvh;
+  overflow: hidden;
 }
 
 body {
   background-color: var(--color-surface-base);
   color: var(--color-text-primary);
-  min-height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
 }
 
 /* ─── Scrollbar personalizado ────────────────────────────────── */

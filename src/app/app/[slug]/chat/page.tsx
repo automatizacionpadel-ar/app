@@ -342,7 +342,7 @@ export default function ChatPage({ params }: { params: { slug: string } }) {
   const enviando = loading || uploadingImg
 
   return (
-    <div className="flex flex-col" style={{ height: '100dvh', overflow: 'hidden' }}>
+    <div className="flex flex-col h-full">
 
       {/* Header */}
       <div className="flex-shrink-0" style={{ background: '#2A2A29', borderBottom: '1px solid #3D3D3B' }}>
