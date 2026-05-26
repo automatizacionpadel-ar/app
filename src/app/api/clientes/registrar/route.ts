@@ -6,14 +6,16 @@ export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest) {
   try {
-    let body: { negocio_id?: string; nombre?: string; apellido?: string; celular?: string; chat_id?: string }
+    let body: { negocio_id?: string; medico_id?: string; nombre?: string; apellido?: string; celular?: string; chat_id?: string }
     try {
       body = await req.json()
     } catch {
       return NextResponse.json({ error: 'Body inválido' }, { status: 400 })
     }
 
-    const { negocio_id, nombre, celular, chat_id, apellido } = body
+    // medico_id is the legacy field name sent by older n8n workflow nodes
+    const { nombre, celular, chat_id, apellido } = body
+    const negocio_id = body.negocio_id ?? body.medico_id
 
     if (!negocio_id || !nombre || !celular) {
       return NextResponse.json({ error: 'Faltan campos requeridos: negocio_id, nombre, celular' }, { status: 400 })
