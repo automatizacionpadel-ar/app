@@ -3,7 +3,13 @@ import { createAdminClient } from '@/lib/supabase/server'
 import webpush from 'web-push'
 
 function stripMarkdown(text: string): string {
-  return text.replace(/\*\*(.*?)\*\*/g, '$1').trim()
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/\*(.*?)\*/g, '$1')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/^\s*[-*+]\s+/gm, '')
+    .trim()
 }
 
 webpush.setVapidDetails(
@@ -76,7 +82,7 @@ export async function POST(req: NextRequest) {
 
     // Full content in the notification body + URL so the chat can show it
     // regardless of which chat_id the device has in localStorage
-    const chatUrl = `${chatBaseUrl}?campania=${encodeURIComponent(bodyPush)}`
+    const chatUrl = `${chatBaseUrl}?campania=${encodeURIComponent(contenido)}`
     const payload = JSON.stringify({
       title: titulo,
       body:  bodyPush,

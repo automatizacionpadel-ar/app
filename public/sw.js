@@ -49,6 +49,7 @@ self.addEventListener('push', event => {
     body = '',
     icon = '/favicon.ico',
     badge = '/favicon.ico',
+    image,
     data: extraData = {}
   } = data
 
@@ -57,6 +58,7 @@ self.addEventListener('push', event => {
       body,
       icon,
       badge,
+      image,
       vibrate:  [200, 100, 200],
       tag:      extraData.tag || 'simplificia-notif',
       renotify: true,
