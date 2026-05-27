@@ -1,8 +1,8 @@
 // src/app/dashboard/campanias/CampaniasCliente.tsx
 'use client'
 
-import { useState } from 'react'
-import { Megaphone, Send, Users, CheckCircle, XCircle, Clock, AlertCircle } from 'lucide-react'
+import { useState, useRef } from 'react'
+import { Megaphone, Send, Users, CheckCircle, XCircle, Clock, AlertCircle, ImagePlus, X, Bold } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import type { MensajePromo } from '@/types'
@@ -15,6 +15,13 @@ const SEGMENTO_LABEL: Record<Segmento, string> = {
   inactivos_60d: 'Inactivos hace +60 días',
 }
 
+const EMOJIS = [
+  '😀','😊','😍','🥳','😎','🤩','🎉','✨','👋','💪',
+  '🎁','🌟','⭐','💯','🔥','✅','💰','💎','🎯','📣',
+  '🗓️','❤️','💚','👍','🙌','🏥','💊','🩺','🫶','📸',
+  '🎨','🛍️','🤝','🆕','🎀',
+]
+
 // ─── Formulario nueva campaña ─────────────────────────────────────────────────
 function FormularioCampania({
   negocioId, totalConPush, onEnviada
@@ -23,14 +30,59 @@ function FormularioCampania({
   totalConPush: number
   onEnviada: (campania: MensajePromo) => void
 }) {
-  const [titulo, setTitulo]     = useState('')
-  const [contenido, setContenido] = useState('')
-  const [segmento, setSegmento] = useState<Segmento>('todos')
-  const [loading, setLoading]   = useState(false)
-  const [resultado, setResultado] = useState<{ enviados: number; fallidos: number } | null>(null)
-  const [error, setError]       = useState<string | null>(null)
+  const [titulo, setTitulo]           = useState('')
+  const [contenido, setContenido]     = useState('')
+  const [segmento, setSegmento]       = useState<Segmento>('todos')
+  const [loading, setLoading]         = useState(false)
+  const [resultado, setResultado]     = useState<{ enviados: number; fallidos: number } | null>(null)
+  const [error, setError]             = useState<string | null>(null)
+  const [imagenPrevia, setImagenPrevia] = useState<{ file: File; preview: string } | null>(null)
+  const [uploadingImg, setUploadingImg] = useState(false)
+  const [emojiOpen, setEmojiOpen]     = useState(false)
 
-  const caracteresRestantes = 150 - contenido.length
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const fileRef     = useRef<HTMLInputElement>(null)
+
+  const caracteresRestantes = 500 - contenido.length
+
+  function insertBold() {
+    const ta = textareaRef.current
+    if (!ta) return
+    const start    = ta.selectionStart
+    const end      = ta.selectionEnd
+    const selected = contenido.slice(start, end)
+    if (selected) {
+      const next = contenido.slice(0, start) + `**${selected}**` + contenido.slice(end)
+      setContenido(next)
+      setTimeout(() => ta.setSelectionRange(end + 4, end + 4), 0)
+    } else {
+      const next = contenido.slice(0, start) + '**texto**' + contenido.slice(end)
+      setContenido(next)
+      setTimeout(() => { ta.focus(); ta.setSelectionRange(start + 2, start + 7) }, 0)
+    }
+  }
+
+  function insertEmoji(emoji: string) {
+    const ta = textareaRef.current
+    if (!ta) return
+    const start = ta.selectionStart
+    const next  = contenido.slice(0, start) + emoji + contenido.slice(start)
+    setContenido(next)
+    setEmojiOpen(false)
+    setTimeout(() => { ta.focus(); ta.setSelectionRange(start + emoji.length, start + emoji.length) }, 0)
+  }
+
+  function seleccionarImagen(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setImagenPrevia({ file, preview: URL.createObjectURL(file) })
+    e.target.value = ''
+  }
+
+  function quitarImagen() {
+    if (imagenPrevia) URL.revokeObjectURL(imagenPrevia.preview)
+    setImagenPrevia(null)
+  }
 
   async function handleEnviar() {
     if (!titulo.trim() || !contenido.trim()) return
@@ -40,11 +92,27 @@ function FormularioCampania({
     setError(null)
     setResultado(null)
 
+    let imageUrl: string | undefined
+
+    if (imagenPrevia) {
+      setUploadingImg(true)
+      try {
+        const fd = new FormData()
+        fd.append('imagen', imagenPrevia.file)
+        const res  = await fetch('/api/chat/imagen', { method: 'POST', body: fd })
+        const data = await res.json()
+        if (data.url) imageUrl = data.url
+      } catch {}
+      setUploadingImg(false)
+      URL.revokeObjectURL(imagenPrevia.preview)
+      setImagenPrevia(null)
+    }
+
     try {
       const res = await fetch('/api/campanias/enviar', {
-        method: 'POST',
+        method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ titulo, contenido, segmento, negocio_id: negocioId }),
+        body: JSON.stringify({ titulo, contenido, image_url: imageUrl, segmento, negocio_id: negocioId }),
       })
 
       const data = await res.json()
@@ -121,24 +189,115 @@ function FormularioCampania({
             <label className="text-xs font-medium" style={{ color: '#9A9A96' }}>
               Mensaje
             </label>
-            <span className="text-xs" style={{ color: caracteresRestantes < 20 ? '#F59E0B' : '#5C5C59' }}>
-              {caracteresRestantes} caracteres restantes
+            <span className="text-xs" style={{ color: caracteresRestantes < 50 ? '#F59E0B' : '#5C5C59' }}>
+              {caracteresRestantes} restantes
             </span>
           </div>
-          <textarea
-            value={contenido}
-            onChange={e => setContenido(e.target.value)}
-            placeholder="Escribí el mensaje que verán tus pacientes..."
-            maxLength={150}
-            rows={3}
-            className="w-full rounded-lg px-4 py-2.5 text-sm resize-none"
-            style={{
-              background: '#20201F', border: '1px solid #3D3D3B',
-              color: '#F0F0EE', outline: 'none',
-            }}
-            onFocus={e => (e.target.style.borderColor = '#7AB619')}
-            onBlur={e => (e.target.style.borderColor = '#3D3D3B')}
-          />
+
+          {/* Editor con toolbar */}
+          <div className="rounded-lg overflow-visible"
+            style={{ background: '#20201F', border: '1px solid #3D3D3B' }}>
+
+            {/* Toolbar */}
+            <div className="flex items-center gap-0.5 px-2 py-1.5"
+              style={{ borderBottom: '1px solid #3D3D3B' }}>
+
+              {/* Bold */}
+              <button
+                type="button"
+                onClick={insertBold}
+                className="w-7 h-7 rounded flex items-center justify-center transition-colors"
+                style={{ color: '#9A9A96' }}
+                onMouseEnter={e => (e.currentTarget.style.color = '#F0F0EE')}
+                onMouseLeave={e => (e.currentTarget.style.color = '#9A9A96')}
+                title="Negrita">
+                <Bold size={14} />
+              </button>
+
+              {/* Emoji */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setEmojiOpen(o => !o)}
+                  className="w-7 h-7 rounded flex items-center justify-center text-base transition-colors"
+                  title="Emoji">
+                  😊
+                </button>
+                {emojiOpen && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setEmojiOpen(false)} />
+                    <div className="absolute top-8 left-0 z-20 rounded-xl p-2 shadow-lg"
+                      style={{ background: '#2A2A29', border: '1px solid #3D3D3B', width: '228px' }}>
+                      <div className="grid grid-cols-7 gap-0.5">
+                        {EMOJIS.map(em => (
+                          <button
+                            key={em}
+                            type="button"
+                            onClick={() => insertEmoji(em)}
+                            className="w-8 h-8 rounded flex items-center justify-center transition-colors"
+                            style={{ fontSize: '18px' }}
+                            onMouseEnter={e => (e.currentTarget.style.background = '#3D3D3B')}
+                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                            {em}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Imagen */}
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                className="w-7 h-7 rounded flex items-center justify-center transition-colors"
+                style={{ color: imagenPrevia ? '#7AB619' : '#9A9A96' }}
+                onMouseEnter={e => (e.currentTarget.style.color = '#F0F0EE')}
+                onMouseLeave={e => (e.currentTarget.style.color = imagenPrevia ? '#7AB619' : '#9A9A96')}
+                title="Adjuntar imagen">
+                <ImagePlus size={14} />
+              </button>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={seleccionarImagen}
+              />
+            </div>
+
+            {/* Preview imagen */}
+            {imagenPrevia && (
+              <div className="px-3 pt-2 relative inline-block">
+                <img
+                  src={imagenPrevia.preview}
+                  alt="Preview"
+                  className="rounded-lg"
+                  style={{ height: '72px', width: 'auto', maxWidth: '140px', objectFit: 'cover' }}
+                />
+                <button
+                  type="button"
+                  onClick={quitarImagen}
+                  className="absolute top-0.5 right-0 rounded-full p-0.5"
+                  style={{ background: '#EF4444', color: '#fff' }}>
+                  <X size={11} />
+                </button>
+              </div>
+            )}
+
+            {/* Textarea */}
+            <textarea
+              ref={textareaRef}
+              value={contenido}
+              onChange={e => setContenido(e.target.value)}
+              placeholder="Escribí el mensaje que verán tus pacientes..."
+              maxLength={500}
+              rows={3}
+              className="w-full px-4 py-2.5 text-sm resize-none bg-transparent outline-none"
+              style={{ color: '#F0F0EE' }}
+            />
+          </div>
         </div>
 
         {/* Segmento */}
@@ -176,11 +335,13 @@ function FormularioCampania({
         {/* Botón enviar */}
         <button
           onClick={handleEnviar}
-          disabled={loading || !titulo.trim() || !contenido.trim()}
+          disabled={loading || uploadingImg || !titulo.trim() || !contenido.trim()}
           className="w-full flex items-center justify-center gap-2 rounded-lg py-3 text-sm font-semibold transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
           style={{ background: '#7AB619', color: '#20201F' }}>
-          {loading ? (
-            <span className="animate-pulse-soft">Enviando...</span>
+          {loading || uploadingImg ? (
+            <span className="animate-pulse">
+              {uploadingImg ? 'Subiendo imagen...' : 'Enviando...'}
+            </span>
           ) : (
             <>
               <Send size={15} />
