@@ -75,6 +75,16 @@ function FormularioCampania({
   function seleccionarImagen(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+    if (!file.type.startsWith('image/')) {
+      setError('El archivo debe ser una imagen.')
+      e.target.value = ''
+      return
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setError('La imagen no puede superar 10 MB.')
+      e.target.value = ''
+      return
+    }
     setImagenPrevia({ file, preview: URL.createObjectURL(file) })
     e.target.value = ''
   }
