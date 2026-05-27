@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import webpush from 'web-push'
 
+function stripMarkdown(text: string): string {
+  return text.replace(/\*\*(.*?)\*\*/g, '$1').trim()
+}
+
 webpush.setVapidDetails(
   process.env.VAPID_EMAIL!,
   process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
@@ -10,11 +14,13 @@ webpush.setVapidDetails(
 
 export async function POST(req: NextRequest) {
   try {
-    const { titulo, contenido, segmento, negocio_id } = await req.json()
+    const { titulo, contenido, image_url, segmento, negocio_id } = await req.json()
 
     if (!titulo || !contenido || !negocio_id) {
       return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 })
     }
+
+    const bodyPush = stripMarkdown(contenido).slice(0, 150)
 
     const supabase = createAdminClient()
 
@@ -70,12 +76,13 @@ export async function POST(req: NextRequest) {
 
     // Full content in the notification body + URL so the chat can show it
     // regardless of which chat_id the device has in localStorage
-    const chatUrl = `${chatBaseUrl}?campania=${encodeURIComponent(contenido)}`
+    const chatUrl = `${chatBaseUrl}?campania=${encodeURIComponent(bodyPush)}`
     const payload = JSON.stringify({
       title: titulo,
-      body:  contenido,
-      icon:  '/logo.png',
-      badge: '/logo.png',
+      body:  bodyPush,
+      icon:  '/favicon.ico',
+      badge: '/favicon.ico',
+      ...(image_url ? { image: image_url } : {}),
       data: {
         tag: 'campania',
         url: chatUrl,
@@ -124,6 +131,7 @@ export async function POST(req: NextRequest) {
             cliente_id: s.cliente_id,
             role:       'assistant',
             content:    contenido,
+            image_url:  image_url ?? null,
           }))
         )
       }
