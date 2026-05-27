@@ -101,11 +101,21 @@ function FormularioCampania({
         fd.append('imagen', imagenPrevia.file)
         const res  = await fetch('/api/chat/imagen', { method: 'POST', body: fd })
         const data = await res.json()
-        if (data.url) imageUrl = data.url
-      } catch {}
-      setUploadingImg(false)
-      URL.revokeObjectURL(imagenPrevia.preview)
-      setImagenPrevia(null)
+        if (!res.ok || !data.url) {
+          setError('No se pudo subir la imagen. Intentá de nuevo.')
+          setLoading(false)
+          return
+        }
+        imageUrl = data.url
+      } catch {
+        setError('Error al subir la imagen. Verificá tu conexión.')
+        setLoading(false)
+        return
+      } finally {
+        setUploadingImg(false)
+        URL.revokeObjectURL(imagenPrevia.preview)
+        setImagenPrevia(null)
+      }
     }
 
     try {
