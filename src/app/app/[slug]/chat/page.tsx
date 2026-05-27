@@ -31,6 +31,15 @@ function AvatarBot({ logoUrl, color }: { logoUrl: string | null; color: string }
   )
 }
 
+function renderMd(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n/g, '<br/>')
+}
+
 function BurbujaMensaje({ mensaje, logoUrl, color }: { mensaje: Mensaje; logoUrl: string | null; color: string }) {
   const esUsuario = mensaje.role === 'user'
   return (
@@ -56,7 +65,10 @@ function BurbujaMensaje({ mensaje, logoUrl, color }: { mensaje: Mensaje; logoUrl
             />
           )}
           {mensaje.content && (
-            <p className="text-sm leading-relaxed whitespace-pre-wrap">{mensaje.content}</p>
+            <p
+              className="text-sm leading-relaxed"
+              dangerouslySetInnerHTML={{ __html: renderMd(mensaje.content) }}
+            />
           )}
         </div>
         <p className="text-[10px] mt-1 px-1"
