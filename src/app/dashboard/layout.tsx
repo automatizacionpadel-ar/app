@@ -1,6 +1,6 @@
 // src/app/dashboard/layout.tsx
 import { getAuthSession } from '@/lib/auth'
-import Sidebar from '@/components/layout/Sidebar'
+import DashboardShell from '@/components/layout/DashboardShell'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { rol, negocio, user } = await getAuthSession()
@@ -10,11 +10,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
     : 'Super Admin'
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar rol={rol} nombreNegocio={nombreNegocio} />
-      <main className="flex-1 overflow-y-auto">
-        {children}
-      </main>
-    </div>
+    <DashboardShell rol={rol} nombreNegocio={nombreNegocio}>
+      {children}
+    </DashboardShell>
   )
 }

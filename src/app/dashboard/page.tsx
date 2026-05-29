@@ -74,7 +74,7 @@ export default async function DashboardPage() {
   const fechaHoy = format(ahora, "EEEE d 'de' MMMM", { locale: es })
 
   return (
-    <div className="p-6 w-[85%] mx-auto">
+    <div className="p-4 md:p-6 md:w-[85%] md:mx-auto">
 
       {/* Header */}
       <div className="flex items-start justify-between mb-8">

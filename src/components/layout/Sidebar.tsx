@@ -4,13 +4,13 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import clsx from 'clsx'
 import {
   LayoutDashboard, MessageSquare, Users, Megaphone,
   Settings, LogOut, ChevronLeft, ChevronRight,
-  Briefcase,
+  Briefcase, X,
 } from 'lucide-react'
 
 interface NavItem {
@@ -22,22 +22,23 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Dashboard',    href: '/dashboard',              icon: <LayoutDashboard size={18} /> },
-  { label: 'Mensajería',   href: '/dashboard/mensajeria',  icon: <MessageSquare size={18} />, clienteOnly: true },
-  { label: 'Clientes',     href: '/dashboard/clientes',    icon: <Users size={18} />,         clienteOnly: true },
-  { label: 'Campañas',     href: '/dashboard/campanias',   icon: <Megaphone size={18} />,     clienteOnly: true },
-  { label: 'Negocios',     href: '/admin/negocios',      icon: <Briefcase size={18} />,   adminOnly: true },
-  { label: 'Configuración', href: '/dashboard/config',   icon: <Settings size={18} />, clienteOnly: true },
+  { label: 'Dashboard',     href: '/dashboard',            icon: <LayoutDashboard size={18} /> },
+  { label: 'Mensajería',   href: '/dashboard/mensajeria', icon: <MessageSquare size={18} />, clienteOnly: true },
+  { label: 'Clientes',     href: '/dashboard/clientes',   icon: <Users size={18} />,         clienteOnly: true },
+  { label: 'Campañas',     href: '/dashboard/campanias',  icon: <Megaphone size={18} />,     clienteOnly: true },
+  { label: 'Negocios',     href: '/admin/negocios',       icon: <Briefcase size={18} />,     adminOnly: true },
+  { label: 'Configuración', href: '/dashboard/config',    icon: <Settings size={18} />,      clienteOnly: true },
 ]
 
 interface SidebarProps {
-  rol:           string
+  rol:            string
   nombreNegocio?: string
+  isDrawerOpen?:  boolean
+  onClose?:       () => void
 }
 
-export default function Sidebar({ rol, nombreNegocio }: SidebarProps) {
+export default function Sidebar({ rol, nombreNegocio, isDrawerOpen, onClose }: SidebarProps) {
   const pathname = usePathname()
-  const router   = useRouter()
   const [collapsed, setCollapsed] = useState(false)
 
   async function handleLogout() {
@@ -59,23 +60,53 @@ export default function Sidebar({ rol, nombreNegocio }: SidebarProps) {
   return (
     <aside
       className={clsx(
-        'flex flex-col h-screen sticky top-0 transition-all duration-300 flex-shrink-0',
-        collapsed ? 'w-[64px]' : 'w-[220px]'
+        'flex flex-col h-screen z-50 flex-shrink-0',
+        // Mobile: fixed drawer, slide in/out
+        'fixed inset-y-0 left-0 w-[220px]',
+        'transition-transform duration-300',
+        isDrawerOpen ? 'translate-x-0' : '-translate-x-full',
+        // Tablet+: sticky in-flow, always 64px, always visible
+        'md:sticky md:top-0 md:translate-x-0 md:w-[64px]',
+        // Desktop: respect collapsed state
+        collapsed ? 'lg:w-[64px]' : 'lg:w-[220px]',
       )}
       style={{ background: '#2A2A29', borderRight: '1px solid #3D3D3B' }}>
 
-      {/* Logo */}
-      <div className={clsx(
-        'flex items-center h-16 px-4 flex-shrink-0',
-        collapsed ? 'justify-center' : 'justify-between'
-      )}
-        style={{ borderBottom: '1px solid #3D3D3B' }}>
-        {!collapsed && (
-          <Image src="/logo.png" alt="SimplificIA" width={130} height={34} priority />
+      {/* Logo row */}
+      <div
+        className={clsx(
+          'flex items-center h-16 px-4 flex-shrink-0',
+          'justify-between',
+          'md:justify-center',
+          !collapsed ? 'lg:justify-between' : 'lg:justify-center',
         )}
+        style={{ borderBottom: '1px solid #3D3D3B' }}>
+
+        {/* Logo: mobile always, desktop when expanded */}
+        <Image
+          src="/logo.png"
+          alt="SimplificIA"
+          width={130}
+          height={34}
+          priority
+          className={clsx('block md:hidden', !collapsed && 'lg:block')}
+        />
+
+        {/* Close button: mobile drawer only */}
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="flex md:hidden p-1.5 rounded-lg"
+            style={{ color: '#5C5C59' }}
+            aria-label="Cerrar menú">
+            <X size={18} />
+          </button>
+        )}
+
+        {/* Toggle button: desktop only */}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="rounded-lg p-1.5 transition-colors"
+          className="hidden lg:flex rounded-lg p-1.5 transition-colors"
           style={{ color: '#5C5C59' }}
           onMouseEnter={e => (e.currentTarget.style.color = '#7AB619')}
           onMouseLeave={e => (e.currentTarget.style.color = '#5C5C59')}
@@ -84,9 +115,14 @@ export default function Sidebar({ rol, nombreNegocio }: SidebarProps) {
         </button>
       </div>
 
-      {/* Negocio info */}
-      {!collapsed && nombreNegocio && (
-        <div className="px-4 py-3 flex-shrink-0"
+      {/* Negocio info: mobile + desktop-expanded only */}
+      {nombreNegocio && (
+        <div
+          className={clsx(
+            'px-4 py-3 flex-shrink-0',
+            'block md:hidden',
+            !collapsed ? 'lg:block' : 'lg:hidden',
+          )}
           style={{ borderBottom: '1px solid #3D3D3B' }}>
           <p className="text-xs" style={{ color: '#5C5C59' }}>
             {isAdmin ? 'Administrador' : 'Negocio'}
@@ -108,9 +144,13 @@ export default function Sidebar({ rol, nombreNegocio }: SidebarProps) {
             <Link
               key={item.href}
               href={item.href}
+              onClick={() => onClose?.()}
               className={clsx(
-                'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all',
-                collapsed && 'justify-center px-2',
+                'flex items-center gap-3 rounded-lg py-2.5 px-3 text-sm font-medium transition-all',
+                // Tablet: center icon
+                'md:justify-center md:px-2',
+                // Desktop: respect collapsed
+                collapsed ? 'lg:justify-center lg:px-2' : 'lg:justify-start lg:px-3',
               )}
               style={{
                 color:      active ? '#7AB619' : '#9A9A96',
@@ -118,11 +158,23 @@ export default function Sidebar({ rol, nombreNegocio }: SidebarProps) {
               }}
               onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'rgba(122,182,25,0.05)'; e.currentTarget.style.color = '#F0F0EE' } }}
               onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#9A9A96' } }}
-              title={collapsed ? item.label : undefined}>
+              title={item.label}>
               {item.icon}
-              {!collapsed && <span>{item.label}</span>}
-              {!collapsed && item.adminOnly && (
-                <span className="ml-auto text-[10px] rounded px-1.5 py-0.5 font-semibold"
+              {/* Text: mobile always, tablet hidden, desktop respects collapsed */}
+              <span className={clsx(
+                'inline md:hidden',
+                !collapsed ? 'lg:inline' : 'lg:hidden',
+              )}>
+                {item.label}
+              </span>
+              {/* Admin badge */}
+              {item.adminOnly && (
+                <span
+                  className={clsx(
+                    'ml-auto text-[10px] rounded px-1.5 py-0.5 font-semibold',
+                    'inline md:hidden',
+                    !collapsed ? 'lg:inline' : 'lg:hidden',
+                  )}
                   style={{ background: 'rgba(122,182,25,0.15)', color: '#7AB619' }}>
                   Admin
                 </span>
@@ -137,15 +189,18 @@ export default function Sidebar({ rol, nombreNegocio }: SidebarProps) {
         <button
           onClick={handleLogout}
           className={clsx(
-            'w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all',
-            collapsed && 'justify-center px-2'
+            'w-full flex items-center gap-3 rounded-lg py-2.5 px-3 text-sm transition-all',
+            'md:justify-center md:px-2',
+            collapsed ? 'lg:justify-center lg:px-2' : 'lg:justify-start lg:px-3',
           )}
           style={{ color: '#5C5C59' }}
           onMouseEnter={e => { e.currentTarget.style.color = '#EF4444'; e.currentTarget.style.background = 'rgba(239,68,68,0.08)' }}
           onMouseLeave={e => { e.currentTarget.style.color = '#5C5C59'; e.currentTarget.style.background = 'transparent' }}
-          title={collapsed ? 'Cerrar sesión' : undefined}>
+          title="Cerrar sesión">
           <LogOut size={18} />
-          {!collapsed && <span>Cerrar sesión</span>}
+          <span className={clsx('inline md:hidden', !collapsed ? 'lg:inline' : 'lg:hidden')}>
+            Cerrar sesión
+          </span>
         </button>
       </div>
     </aside>

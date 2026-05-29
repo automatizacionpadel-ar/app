@@ -123,7 +123,7 @@ export default async function AdminPage() {
   const mrrFormateado = mrr.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 })
 
   return (
-    <div className="p-6 w-[85%] mx-auto">
+    <div className="p-4 md:p-6 md:w-[85%] md:mx-auto">
 
       {/* Header */}
       <div className="mb-8">
@@ -200,7 +200,41 @@ export default async function AdminPage() {
           </a>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Vista mobile: tarjetas */}
+        <div className="md:hidden space-y-3">
+          {(negociosRecientes ?? []).map(negocio => (
+            <div key={negocio.id} className="rounded-xl p-4"
+              style={{ background: '#20201F', border: '1px solid #3D3D3B' }}>
+              <div className="flex items-start justify-between mb-2">
+                <div>
+                  <p className="text-sm font-medium" style={{ color: '#F0F0EE' }}>{negocio.nombre}</p>
+                  <p className="text-xs mt-0.5" style={{ color: '#5C5C59' }}>{negocio.rubro}</p>
+                </div>
+                <span className="text-xs rounded-full px-2.5 py-1 font-medium flex-shrink-0 ml-2"
+                  style={negocio.activo
+                    ? { background: 'rgba(122,182,25,0.12)', color: '#7AB619' }
+                    : { background: 'rgba(92,92,89,0.15)', color: '#5C5C59' }
+                  }>
+                  {negocio.activo ? 'Activo' : 'Inactivo'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <SuscripcionBadge estado={suscripcionPorNegocio.get(negocio.id) ?? null} />
+                <span className="text-xs" style={{ color: '#5C5C59' }}>
+                  {format(new Date(negocio.created_at), 'd MMM yyyy', { locale: es })}
+                </span>
+              </div>
+            </div>
+          ))}
+          {(negociosRecientes ?? []).length === 0 && (
+            <p className="text-sm text-center py-8" style={{ color: '#5C5C59' }}>
+              No hay clientes registrados
+            </p>
+          )}
+        </div>
+
+        {/* Vista tablet+: tabla */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr style={{ borderBottom: '1px solid #3D3D3B' }}>

@@ -405,7 +405,7 @@ export default function ConfigCliente({ negocio, negocioId }: { negocio: Negocio
   }
 
   return (
-    <div className="p-6 w-[85%] mx-auto">
+    <div className="p-4 md:p-6 md:w-[85%] md:mx-auto">
 
       <div className="mb-8">
         <h1 className="text-2xl font-bold mb-1" style={{ color: '#F0F0EE' }}>Configuración</h1>

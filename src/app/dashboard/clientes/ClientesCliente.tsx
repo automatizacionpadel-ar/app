@@ -126,6 +126,47 @@ function ModalCliente({ cliente, onClose, onNuevaReceta, negocioInfo }: {
   )
 }
 
+// ─── Tarjeta cliente (mobile) ─────────────────────────────────────────────────
+function TarjetaCliente({ cliente, onClick }: { cliente: Cliente; onClick: () => void }) {
+  const nombre  = `${cliente.nombre} ${cliente.apellido ?? ''}`.trim()
+  const inicial = nombre.charAt(0).toUpperCase()
+
+  return (
+    <button
+      onClick={onClick}
+      className="w-full text-left rounded-xl p-4 mb-2 transition-colors"
+      style={{ background: '#2A2A29', border: '1px solid #3D3D3B' }}
+      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(122,182,25,0.04)')}
+      onMouseLeave={e => (e.currentTarget.style.background = '#2A2A29')}>
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0"
+            style={{ background: 'rgba(122,182,25,0.12)', color: '#7AB619' }}>
+            {inicial}
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-medium truncate" style={{ color: '#F0F0EE' }}>{nombre}</p>
+            <p className="text-xs truncate" style={{ color: '#5C5C59' }}>
+              {cliente.celular ?? cliente.email ?? 'Sin contacto'}
+            </p>
+          </div>
+        </div>
+        <PushBadge activo={cliente.push_activo} />
+      </div>
+      <div className="flex gap-4 pl-12">
+        <span className="text-xs" style={{ color: '#5C5C59' }}>
+          {cliente.total_citas} cita{cliente.total_citas !== 1 ? 's' : ''}
+        </span>
+        {cliente.ultima_cita_at && (
+          <span className="text-xs" style={{ color: '#5C5C59' }}>
+            Última: {format(new Date(cliente.ultima_cita_at), "d MMM yyyy", { locale: es })}
+          </span>
+        )}
+      </div>
+    </button>
+  )
+}
+
 // ─── Fila de cliente ──────────────────────────────────────────────────────────
 function FilaCliente({ cliente, onClick }: { cliente: Cliente; onClick: () => void }) {
   const nombre  = `${cliente.nombre} ${cliente.apellido ?? ''}`.trim()
@@ -197,7 +238,7 @@ export default function ClientesCliente({
   const totalConPush = clientesIniciales.filter(p => p.push_activo).length
 
   return (
-    <div className="p-6 w-[85%] mx-auto">
+    <div className="p-4 md:p-6 md:w-[85%] md:mx-auto">
 
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
@@ -210,7 +251,7 @@ export default function ClientesCliente({
       </div>
 
       {/* Stats rápidas */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
         {[
           { label: 'Total', valor: clientesIniciales.length, color: '#7AB619' },
           { label: 'Con push', valor: totalConPush, color: '#3B82F6' },
@@ -225,7 +266,7 @@ export default function ClientesCliente({
       </div>
 
       {/* Búsqueda y filtros */}
-      <div className="flex gap-3 mb-4">
+      <div className="flex flex-col md:flex-row gap-3 mb-4">
         <div className="flex-1 relative">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2"
             style={{ color: '#5C5C59' }} />
@@ -263,10 +304,26 @@ export default function ClientesCliente({
         </select>
       </div>
 
-      {/* Lista */}
-      <div className="rounded-xl overflow-hidden"
-        style={{ background: '#2A2A29', border: '1px solid #3D3D3B' }}>
+      {/* Lista mobile: tarjetas */}
+      <div className="md:hidden">
+        {clientesFiltrados.length === 0 ? (
+          <div className="rounded-xl p-12 text-center"
+            style={{ background: '#2A2A29', border: '1px solid #3D3D3B' }}>
+            <Users size={40} style={{ color: '#3D3D3B' }} className="mx-auto mb-3" />
+            <p className="text-sm" style={{ color: '#5C5C59' }}>
+              {busqueda ? 'No se encontraron clientes' : 'No hay clientes registrados'}
+            </p>
+          </div>
+        ) : (
+          clientesFiltrados.map(p => (
+            <TarjetaCliente key={p.id} cliente={p} onClick={() => setClienteModal(p)} />
+          ))
+        )}
+      </div>
 
+      {/* Lista tablet+: filas */}
+      <div className="hidden md:block rounded-xl overflow-hidden"
+        style={{ background: '#2A2A29', border: '1px solid #3D3D3B' }}>
         {clientesFiltrados.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16">
             <Users size={40} style={{ color: '#3D3D3B' }} className="mb-3" />
