@@ -4,8 +4,9 @@
 import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { User, Calendar, Stethoscope, Upload, CheckCircle, AlertCircle, FileSignature, Link2, Palette } from 'lucide-react'
+import { User, Calendar, Stethoscope, Upload, CheckCircle, AlertCircle, FileSignature, Link2, Palette, Store, Puzzle, Layers } from 'lucide-react'
 import type { Negocio, HorarioDia } from '@/types'
+import { MODULOS } from '@/lib/modulos'
 
 const DIAS = ['lunes','martes','miercoles','jueves','viernes','sabado','domingo'] as const
 type Dia = typeof DIAS[number]
@@ -322,6 +323,11 @@ export default function ConfigCliente({ negocio, negocioId }: { negocio: Negocio
     alias_mp:             negocio.alias_mp             ?? '',
     acepta_agendamientos: negocio.acepta_agendamientos,
     color_marca:          negocio.color_marca ?? '#7AB619',
+    descripcion:          (negocio as any).descripcion ?? '',
+    texto_bienvenida:     (negocio as any).texto_bienvenida ?? '',
+    color_secundario:     (negocio as any).color_secundario ?? '#3B82F6',
+    ocultar_marca_plataforma: (negocio as any).ocultar_marca_plataforma ?? false,
+    modulos_habilitados:  (negocio as any).modulos_habilitados ?? ['chat','qr','etiquetas','campanias','servicios','reservas','webhooks'],
   }))
 
   const [loading, setLoading] = useState(false)
@@ -389,6 +395,11 @@ export default function ConfigCliente({ negocio, negocioId }: { negocio: Negocio
           alias_mp:             form.alias_mp || null,
           acepta_agendamientos: form.acepta_agendamientos,
           color_marca:          form.color_marca,
+          descripcion:          form.descripcion || null,
+          texto_bienvenida:     form.texto_bienvenida || null,
+          color_secundario:     form.color_secundario || null,
+          ocultar_marca_plataforma: form.ocultar_marca_plataforma,
+          modulos_habilitados:  form.modulos_habilitados,
         }),
       })
       const data = await res.json()
@@ -661,7 +672,61 @@ export default function ConfigCliente({ negocio, negocioId }: { negocio: Negocio
           </SectionCard>
         )}
 
-        {/* ── Sección 5: Color del chat ── */}
+        {/* ── Sección 5: Branding PWA ── */}
+        <SectionCard icon={<Store size={18} />} color="#06B6D4"
+          titulo="Branding PWA" subtitulo="Personalizá la landing que ven tus clientes">
+
+          <Campo label="Descripción corta">
+            <textarea value={form.descripcion} onChange={e=>setField('descripcion', e.target.value)} placeholder="Ej: Atención personalizada desde 1998" rows={2} className="w-full rounded-lg px-4 py-2.5 text-sm resize-none" style={{ background: '#20201F', border: '1px solid #3D3D3B', color: '#F0F0EE', outline: 'none' }} />
+          </Campo>
+
+          <Campo label="Texto de bienvenida (landing)">
+            <textarea value={form.texto_bienvenida} onChange={e=>setField('texto_bienvenida', e.target.value)} placeholder="Bienvenido a nuestra tienda..." rows={2} className="w-full rounded-lg px-4 py-2.5 text-sm resize-none" style={{ background: '#20201F', border: '1px solid #3D3D3B', color: '#F0F0EE', outline: 'none' }} />
+          </Campo>
+
+          <div className="grid grid-cols-2 gap-4">
+            <Campo label="Color secundario">
+              <div className="flex items-center gap-2">
+                <input type="color" value={form.color_secundario} onChange={e=>setField('color_secundario', e.target.value)} className="rounded-lg cursor-pointer" style={{ width: 44, height: 36, padding: 3, background: '#20201F', border: '1px solid #3D3D3B' }} />
+                <Input value={form.color_secundario} onChange={e=>setField('color_secundario', e.target.value)} placeholder="#3B82F6" style={{ flex: 1, fontFamily: 'monospace' }} />
+              </div>
+            </Campo>
+            <div className="rounded-xl p-4 flex items-center justify-between" style={{ background: '#20201F' }}>
+              <div>
+                <p className="text-sm font-medium" style={{ color: '#F0F0EE' }}>Ocultar marca SimplificIA</p>
+                <p className="text-xs" style={{ color: '#5C5C59' }}>Plan Pro/Enterprise</p>
+              </div>
+              <Toggle checked={form.ocultar_marca_plataforma} onChange={v=>setField('ocultar_marca_plataforma', v)} />
+            </div>
+          </div>
+        </SectionCard>
+
+        {/* ── Sección 6: Módulos ── */}
+        <SectionCard icon={<Puzzle size={18} />} color="#8B5CF6"
+          titulo="Módulos" subtitulo="Activá solo lo que necesitás. Los beta requieren confirmación">
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {MODULOS.map(m=> {
+              const activo = form.modulos_habilitados.includes(m.id)
+              return (
+                <label key={m.id} className="flex items-center gap-3 rounded-xl px-3 py-2.5 cursor-pointer" style={{ background: activo ? 'rgba(122,182,25,0.08)' : '#20201F', border: `1px solid ${activo ? '#7AB619' : '#3D3D3B'}` }}>
+                  <input type="checkbox" checked={activo} onChange={e=>{
+                    const next = e.target.checked ? [...form.modulos_habilitados, m.id] : form.modulos_habilitados.filter((x: string)=>x!==m.id)
+                    setField('modulos_habilitados', next)
+                  }} className="hidden" />
+                  <div className="w-5 h-5 rounded flex items-center justify-center flex-shrink-0" style={{ background: activo ? '#7AB619' : '#3D3D3B', color: '#fff' }}>{activo && <CheckCircle size={12}/>}</div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold" style={{ color: '#F0F0EE' }}>{m.nombre} {m.beta && <span className="ml-1 text-[10px] rounded px-1" style={{ background: '#F59E0B', color: '#fff' }}>BETA</span>}</p>
+                    <p className="text-xs" style={{ color: '#5C5C59' }}>{m.descripcion}</p>
+                  </div>
+                </label>
+              )
+            })}
+          </div>
+          <p className="text-xs" style={{ color: '#5C5C59' }}>Tip: Pedidos y Fidelización están en beta — actívalos cuando quieras ofrecer catálogo y cupones.</p>
+        </SectionCard>
+
+        {/* ── Sección 7: Color del chat ── */}
         <SectionCard icon={<Palette size={18} />} color="#EC4899"
           titulo="Color del Chat" subtitulo="Personalizá el color de las burbujas del asistente">
 

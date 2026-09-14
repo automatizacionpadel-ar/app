@@ -1,8 +1,9 @@
 import Link from 'next/link'
 import { getTenantBySlug } from '@/lib/tenant'
-import { ArrowLeft, Store } from 'lucide-react'
+import { Store } from 'lucide-react'
 import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/server'
+import ServiciosCatalogo from '@/components/pwa/ServiciosCatalogo'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,7 +19,7 @@ export default async function ServiciosPage({ params }: { params: { slug: string
     return (
       <div className="flex flex-col h-full" style={{ background: '#20201F' }}>
         <div className="flex items-center gap-3 px-4 py-3 flex-shrink-0" style={{ background: '#2A2A29', borderBottom: '1px solid #3D3D3B' }}>
-          <Link href={`/c/${params.slug}`} className="rounded-lg p-1.5" style={{ color: '#5C5C59' }}><ArrowLeft size={18} /></Link>
+          <Link href={`/c/${params.slug}`} className="rounded-lg p-1.5" style={{ color: '#5C5C59' }}><Store size={18} /></Link>
           <p className="text-sm font-semibold" style={{ color: '#F0F0EE' }}>Servicios</p>
         </div>
         <div className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-3">
@@ -31,26 +32,5 @@ export default async function ServiciosPage({ params }: { params: { slug: string
     )
   }
 
-  return (
-    <div className="flex flex-col h-full" style={{ background: '#20201F' }}>
-      <div className="flex items-center gap-3 px-4 py-3 flex-shrink-0" style={{ background: '#2A2A29', borderBottom: '1px solid #3D3D3B' }}>
-        <Link href={`/c/${params.slug}`} className="rounded-lg p-1.5" style={{ color: '#5C5C59' }}><ArrowLeft size={18} /></Link>
-        <p className="text-sm font-semibold" style={{ color: '#F0F0EE' }}>Servicios</p>
-        <span className="ml-auto text-xs" style={{ color: '#5C5C59' }}>{servicios.length} servicios</span>
-      </div>
-      <div className="flex-1 overflow-y-auto p-3 space-y-2 scrollbar-hide">
-        {servicios.map((s: any) => (
-          <div key={s.id} className="rounded-2xl p-3 flex gap-3" style={{ background: '#2A2A29', border: '1px solid #3D3D3B' }}>
-            {s.imagen_url ? <img src={s.imagen_url} alt={s.nombre} className="w-16 h-16 rounded-xl object-cover flex-shrink-0" /> : <div className="w-16 h-16 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#20201F' }}><Store size={18} style={{ color }} /></div>}
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold" style={{ color: '#F0F0EE' }}>{s.nombre}</p>
-              {s.descripcion && <p className="text-xs line-clamp-2" style={{ color: '#9A9A96' }}>{s.descripcion}</p>}
-              <p className="text-sm font-bold mt-1" style={{ color }}>{s.precio > 0 ? `$${Number(s.precio).toLocaleString('es-AR')}` : 'Consultar'}</p>
-            </div>
-            <Link href={`/c/${params.slug}/chat`} className="self-center rounded-xl px-3 py-2 text-xs font-semibold flex-shrink-0" style={{ background: color, color: '#fff' }}>Consultar</Link>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
+  return <ServiciosCatalogo servicios={servicios as any} slug={params.slug} color={color} negocioId={tenant.id} />
 }

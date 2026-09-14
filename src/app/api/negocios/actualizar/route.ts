@@ -59,33 +59,44 @@ export async function PATCH(req: NextRequest) {
       precio_consulta, requiere_sena, monto_sena,
       cbu, alias_mp,
       acepta_agendamientos,
+      descripcion, imagen_portada_url, color_secundario, texto_bienvenida, ocultar_marca_plataforma,
+      modulos_habilitados, moneda,
     } = body
 
     const admin = createAdminClient()
     const slugSource = nombre_negocio || nombre
     const nuevoSlug = slugSource ? await generateUniqueSlug(admin, slugSource, negocio.id) : undefined
 
+    const payload: any = {
+        ...(nombre !== undefined ? { nombre } : {}),
+        ...(nombre_negocio !== undefined ? { nombre_negocio: nombre_negocio ?? null } : {}),
+        ...(color_marca !== undefined ? { color_marca: color_marca ?? null } : {}),
+        ...(nuevoSlug ? { slug: nuevoSlug } : {}),
+        ...(telefono !== undefined ? { telefono: telefono || null } : {}),
+        ...(direccion !== undefined ? { direccion: direccion || null } : {}),
+        ...(foto_perfil_url !== undefined ? { foto_perfil_url: foto_perfil_url ?? null } : {}),
+        ...(logo_url !== undefined ? { logo_url: logo_url ?? null } : {}),
+        ...(sello_url !== undefined ? { sello_url: sello_url ?? null } : {}),
+        ...(firma_url !== undefined ? { firma_url: firma_url ?? null } : {}),
+        ...(horarios !== undefined ? { horarios: horarios ?? null } : {}),
+        ...(precio_consulta !== undefined ? { precio_consulta: precio_consulta ?? null } : {}),
+        ...(requiere_sena !== undefined ? { requiere_sena: requiere_sena ?? false } : {}),
+        ...(monto_sena !== undefined ? { monto_sena: monto_sena ?? null } : {}),
+        ...(cbu !== undefined ? { cbu: cbu ?? null } : {}),
+        ...(alias_mp !== undefined ? { alias_mp: alias_mp ?? null } : {}),
+        ...(acepta_agendamientos !== undefined ? { acepta_agendamientos: acepta_agendamientos ?? true } : {}),
+        ...(descripcion !== undefined ? { descripcion: descripcion ?? null } : {}),
+        ...(imagen_portada_url !== undefined ? { imagen_portada_url: imagen_portada_url ?? null } : {}),
+        ...(color_secundario !== undefined ? { color_secundario: color_secundario ?? null } : {}),
+        ...(texto_bienvenida !== undefined ? { texto_bienvenida: texto_bienvenida ?? null } : {}),
+        ...(ocultar_marca_plataforma !== undefined ? { ocultar_marca_plataforma } : {}),
+        ...(modulos_habilitados !== undefined ? { modulos_habilitados } : {}),
+        ...(moneda !== undefined ? { moneda: moneda ?? 'ARS' } : {}),
+      }
+
     const { error: updateError } = await supabase
       .from('negocios')
-      .update({
-        nombre,
-        nombre_negocio:      nombre_negocio  ?? null,
-        color_marca:         color_marca     ?? null,
-        ...(nuevoSlug ? { slug: nuevoSlug } : {}),
-        telefono:            telefono        || null,
-        direccion:           direccion       || null,
-        foto_perfil_url:     foto_perfil_url ?? null,
-        logo_url:            logo_url        ?? null,
-        sello_url:           sello_url       ?? null,
-        firma_url:           firma_url       ?? null,
-        horarios:            horarios        ?? null,
-        precio_consulta:     precio_consulta ?? null,
-        requiere_sena:       requiere_sena   ?? false,
-        monto_sena:          monto_sena      ?? null,
-        cbu:                 cbu             ?? null,
-        alias_mp:            alias_mp        ?? null,
-        acepta_agendamientos: acepta_agendamientos ?? true,
-      })
+      .update(payload)
       .eq('id', negocio.id)
 
     if (updateError) return NextResponse.json({ error: 'Error al actualizar' }, { status: 500 })
