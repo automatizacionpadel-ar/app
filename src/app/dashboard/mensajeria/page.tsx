@@ -32,6 +32,7 @@ export default async function MensajeriaPage() {
   const { data: convs, error: convErr } = await supabase
     .from('conversaciones')
     .select(`
+      id,
       chat_id,
       last_message_preview,
       estado,
@@ -46,6 +47,7 @@ export default async function MensajeriaPage() {
 
   if (!convErr && convs && convs.length > 0) {
     conversaciones = convs.map((c: any) => ({
+      id: c.id,
       chat_id: c.chat_id,
       content: c.last_message_preview ?? '',
       role: 'user' as const,

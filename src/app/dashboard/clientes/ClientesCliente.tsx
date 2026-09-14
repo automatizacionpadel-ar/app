@@ -1,7 +1,7 @@
 // src/app/dashboard/clientes/ClientesCliente.tsx
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import {
   Search, Users, Phone, Mail, Calendar,
@@ -32,6 +32,63 @@ function PushBadge({ activo }: { activo: boolean }) {
       }}>
       {activo ? 'Push ✓' : 'Sin push'}
     </span>
+  )
+}
+
+// ─── Selector etiquetas cliente ───────────────────────────────────────────────
+function EtiquetasCliente({ clienteId }: { clienteId: string }) {
+  const [etiquetas, setEtiquetas] = useState<{ id: string; nombre: string; color: string }[]>([])
+  const [todas, setTodas] = useState<{ id: string; nombre: string; color: string }[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    Promise.all([
+      fetch(`/api/clientes/${clienteId}/etiquetas`).then(r => r.json()),
+      fetch('/api/etiquetas').then(r => r.json()),
+    ]).then(([a, b]) => {
+      setEtiquetas(a.etiquetas ?? [])
+      setTodas(b.etiquetas ?? [])
+      setLoading(false)
+    })
+  }, [clienteId])
+
+  async function toggle(etId: string, tiene: boolean) {
+    if (tiene) {
+      await fetch(`/api/clientes/${clienteId}/etiquetas?etiqueta_id=${etId}`, { method: 'DELETE' })
+      setEtiquetas(prev => prev.filter(e => e.id !== etId))
+    } else {
+      await fetch(`/api/clientes/${clienteId}/etiquetas`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ etiqueta_id: etId }) })
+      const et = todas.find(e => e.id === etId)
+      if (et) setEtiquetas(prev => [...prev, et])
+    }
+  }
+
+  if (loading) return <p className="text-xs" style={{ color: '#5C5C59' }}>Cargando etiquetas...</p>
+
+  return (
+    <div className="space-y-2">
+      <p className="text-xs font-medium" style={{ color: '#9A9A96' }}>Etiquetas</p>
+      <div className="flex flex-wrap gap-1.5">
+        {todas.length === 0 && <span className="text-xs" style={{ color: '#5C5C59' }}>Sin etiquetas. Crealas en /dashboard/etiquetas</span>}
+        {todas.map(et => {
+          const tiene = etiquetas.some(e => e.id === et.id)
+          return (
+            <button key={et.id} onClick={() => toggle(et.id, tiene)}
+              className="rounded-full px-2.5 py-1 text-xs font-medium border transition-colors"
+              style={{ background: tiene ? et.color : 'transparent', color: tiene ? '#fff' : et.color, borderColor: et.color }}>
+              {et.nombre}
+            </button>
+          )
+        })}
+      </div>
+      {etiquetas.length > 0 && (
+        <div className="flex flex-wrap gap-1 pt-1">
+          {etiquetas.map(e => (
+            <span key={e.id} className="rounded-full px-2 py-0.5 text-xs" style={{ background: `${e.color}20`, color: e.color, border: `1px solid ${e.color}30` }}>{e.nombre}</span>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -109,6 +166,8 @@ function ModalCliente({ cliente, onClose, onNuevaReceta, negocioInfo }: {
           <p className="text-xs pt-1" style={{ color: '#5C5C59' }}>
             Registrado el {format(new Date(cliente.created_at), "d 'de' MMMM yyyy", { locale: es })}
           </p>
+
+          <EtiquetasCliente clienteId={cliente.id} />
 
           {negocioInfo?.habilitar_recetas && (
             <button onClick={onNuevaReceta}
