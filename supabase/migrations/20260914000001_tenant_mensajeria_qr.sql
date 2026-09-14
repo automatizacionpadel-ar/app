@@ -72,8 +72,14 @@ CREATE INDEX IF NOT EXISTS conversaciones_cliente_idx ON conversaciones (cliente
 CREATE INDEX IF NOT EXISTS conversaciones_chat_idx ON conversaciones (chat_id);
 
 -- Backfill conversaciones desde mensajes existentes (idempotente)
+-- MAX(uuid) no existe en Postgres, usamos array_agg para el último cliente_id no-nulo
 INSERT INTO conversaciones (negocio_id, cliente_id, chat_id, last_message_at, last_message_preview)
-SELECT negocio_id, MAX(cliente_id), chat_id, MAX(created_at), MAX(LEFT(content, 120))
+SELECT
+  negocio_id,
+  (array_agg(cliente_id ORDER BY created_at DESC) FILTER (WHERE cliente_id IS NOT NULL))[1],
+  chat_id,
+  MAX(created_at),
+  (array_agg(LEFT(content, 120) ORDER BY created_at DESC))[1]
 FROM mensajes GROUP BY negocio_id, chat_id
 ON CONFLICT (negocio_id, chat_id) DO NOTHING;
 
