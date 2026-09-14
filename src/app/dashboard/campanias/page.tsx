@@ -7,7 +7,7 @@ export default async function CampaniasPage() {
 
   const negocioId = rol === 'negocio' ? (negocio?.id ?? null) : null
 
-  const [{ data: campanias }, { count: totalConPush }] = await Promise.all([
+  const [{ data: campanias }, { count: totalConPush }, { data: etiquetas }] = await Promise.all([
     supabase
       .from('mensajes_promo')
       .select('*')
@@ -19,6 +19,7 @@ export default async function CampaniasPage() {
       .select('*', { count: 'exact', head: true })
       .eq('negocio_id', negocioId ?? '')
       .eq('activo', true),
+    negocioId ? supabase.from('etiquetas').select('id,nombre,color').eq('negocio_id', negocioId).order('nombre') : Promise.resolve({ data: [] } as any),
   ])
 
   return (
@@ -26,6 +27,7 @@ export default async function CampaniasPage() {
       campaniasIniciales={campanias ?? []}
       negocioId={negocioId}
       totalConPush={totalConPush ?? 0}
+      etiquetas={etiquetas ?? []}
     />
   )
 }

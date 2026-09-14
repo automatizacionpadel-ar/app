@@ -20,7 +20,7 @@ webpush.setVapidDetails(
 
 export async function POST(req: NextRequest) {
   try {
-    const { titulo, contenido, image_url, segmento, negocio_id } = await req.json()
+    const { titulo, contenido, image_url, segmento, negocio_id, etiqueta_id } = await req.json()
 
     if (!titulo || !contenido || !negocio_id) {
       return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 })
@@ -72,6 +72,16 @@ export async function POST(req: NextRequest) {
       const ids = (clientesInactivos ?? []).map(p => p.id)
       if (ids.length > 0) query = query.in('cliente_id', ids)
       else return NextResponse.json({ enviados: 0, fallidos: 0 })
+    }
+
+    if (etiqueta_id) {
+      const { data: etiquetados } = await supabase
+        .from('cliente_etiquetas')
+        .select('cliente_id')
+        .eq('etiqueta_id', etiqueta_id)
+      const ids = (etiquetados ?? []).map(r => r.cliente_id)
+      if (ids.length === 0) return NextResponse.json({ enviados: 0, fallidos: 0 })
+      query = query.in('cliente_id', ids)
     }
 
     const { data: subscriptions } = await query

@@ -24,15 +24,17 @@ const EMOJIS = [
 
 // ─── Formulario nueva campaña ─────────────────────────────────────────────────
 function FormularioCampania({
-  negocioId, totalConPush, onEnviada
+  negocioId, totalConPush, onEnviada, etiquetas
 }: {
   negocioId: string | null
   totalConPush: number
   onEnviada: (campania: MensajePromo) => void
+  etiquetas: { id: string; nombre: string; color: string }[]
 }) {
   const [titulo, setTitulo]           = useState('')
   const [contenido, setContenido]     = useState('')
   const [segmento, setSegmento]       = useState<Segmento>('todos')
+  const [etiquetaId, setEtiquetaId]   = useState<string>('')
   const [loading, setLoading]         = useState(false)
   const [resultado, setResultado]     = useState<{ enviados: number; fallidos: number } | null>(null)
   const [error, setError]             = useState<string | null>(null)
@@ -132,7 +134,7 @@ function FormularioCampania({
       const res = await fetch('/api/campanias/enviar', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ titulo, contenido, image_url: imageUrl, segmento, negocio_id: negocioId }),
+        body: JSON.stringify({ titulo, contenido, image_url: imageUrl, segmento, negocio_id: negocioId, etiqueta_id: etiquetaId || undefined }),
       })
 
       const data = await res.json()
@@ -339,6 +341,25 @@ function FormularioCampania({
           </select>
         </div>
 
+        {/* Etiqueta */}
+        {etiquetas.length > 0 && (
+          <div>
+            <label className="block text-xs font-medium mb-1.5" style={{ color: '#9A9A96' }}>
+              Filtrar por etiqueta (opcional)
+            </label>
+            <select
+              value={etiquetaId}
+              onChange={e => setEtiquetaId(e.target.value)}
+              className="w-full rounded-lg px-4 py-2.5 text-sm"
+              style={{ background: '#20201F', border: '1px solid #3D3D3B', color: '#F0F0EE', outline: 'none' }}>
+              <option value="">Todas</option>
+              {etiquetas.map(et => (
+                <option key={et.id} value={et.id}>{et.nombre}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
         {/* Preview destinatarios */}
         <div className="flex items-center gap-2 rounded-lg px-4 py-3"
           style={{ background: '#20201F', border: '1px solid #3D3D3B' }}>
@@ -440,11 +461,12 @@ function HistorialCampanias({ campanias }: { campanias: MensajePromo[] }) {
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 export default function CampaniasCliente({
-  campaniasIniciales, negocioId, totalConPush
+  campaniasIniciales, negocioId, totalConPush, etiquetas
 }: {
   campaniasIniciales: MensajePromo[]
   negocioId: string | null
   totalConPush: number
+  etiquetas: { id: string; nombre: string; color: string }[]
 }) {
   const [campanias, setCampanias] = useState(campaniasIniciales)
 
@@ -467,6 +489,7 @@ export default function CampaniasCliente({
           negocioId={negocioId}
           totalConPush={totalConPush}
           onEnviada={handleEnviada}
+          etiquetas={etiquetas}
         />
 
         {/* Historial */}

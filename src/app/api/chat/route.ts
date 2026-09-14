@@ -106,7 +106,9 @@ export async function POST(req: NextRequest) {
       await supabase.from('mensajes').update({ cliente_id: resolvedClienteId }).eq('chat_id', chat_id).is('cliente_id', null)
     }
 
-    // 5. Fire-and-forget webhook para automatizaciones (si se configura N8N_EVENT_WEBHOOK_URL)
+    // 5. Disparar webhooks tenant + N8N_EVENT_WEBHOOK_URL legacy
+    const { dispatchWebhooks } = await import('@/lib/webhooks')
+    dispatchWebhooks(negocio_id, 'nuevo_mensaje', { chat_id, cliente_id: resolvedClienteId, message: message?.trim(), via: n8nOk ? 'n8n' : 'fallback' })
     const eventWebhook = process.env.N8N_EVENT_WEBHOOK_URL
     if (eventWebhook) {
       fetch(eventWebhook, {

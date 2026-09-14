@@ -56,6 +56,12 @@ export async function POST(req: NextRequest) {
         )
     }
 
+    // webhook nuevo_cliente
+    try {
+      const { dispatchWebhooks } = await import('@/lib/webhooks')
+      dispatchWebhooks(negocio_id, 'nuevo_cliente', { cliente_id: cliente.id, nombre, celular, chat_id: chat_id ?? null })
+    } catch {}
+
     return NextResponse.json({ ok: true, cliente_id: cliente.id })
   } catch {
     return NextResponse.json({ error: 'Error inesperado' }, { status: 500 })

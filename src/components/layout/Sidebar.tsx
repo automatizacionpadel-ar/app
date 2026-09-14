@@ -10,7 +10,7 @@ import clsx from 'clsx'
 import {
   LayoutDashboard, MessageSquare, Users, Megaphone,
   Settings, LogOut, ChevronLeft, ChevronRight,
-  Briefcase, X, QrCode,
+  Briefcase, X, QrCode, Tag, Webhook,
 } from 'lucide-react'
 
 interface NavItem {
@@ -26,7 +26,9 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Mensajería',   href: '/dashboard/mensajeria', icon: <MessageSquare size={18} />, clienteOnly: true },
   { label: 'Clientes',     href: '/dashboard/clientes',   icon: <Users size={18} />,         clienteOnly: true },
   { label: 'QR / NFC',     href: '/dashboard/qr',         icon: <QrCode size={18} />,        clienteOnly: true },
+  { label: 'Etiquetas',    href: '/dashboard/etiquetas',  icon: <Tag size={18} />,           clienteOnly: true },
   { label: 'Campañas',     href: '/dashboard/campanias',  icon: <Megaphone size={18} />,     clienteOnly: true },
+  { label: 'Webhooks',     href: '/dashboard/webhooks',   icon: <Webhook size={18} />,       clienteOnly: true },
   { label: 'Negocios',     href: '/admin/negocios',       icon: <Briefcase size={18} />,     adminOnly: true },
   { label: 'Configuración', href: '/dashboard/config',    icon: <Settings size={18} />,      clienteOnly: true },
 ]
