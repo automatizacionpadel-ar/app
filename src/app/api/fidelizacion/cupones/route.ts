@@ -1,0 +1,21 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
+export const dynamic = 'force-dynamic'
+async function getNegocioId() {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+  const { data: m } = await supabase.from('negocio_miembros').select('negocio_id').eq('usuario_id', user.id).maybeSingle()
+  if ((m as any)?.negocio_id) return (m as any).negocio_id
+  const { data: n } = await supabase.from('negocios').select('id').eq('usuario_id', user.id).maybeSingle()
+  return (n as any)?.id ?? null
+}
+export async function POST(req: NextRequest) {
+  const negocioId = await getNegocioId()
+  if (!negocioId) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  const { codigo, descuento_porcentaje } = await req.json()
+  const admin = createAdminClient()
+  const { data, error } = await admin.from('cupones').insert({ negocio_id: negocioId, codigo, descuento_porcentaje: Number(descuento_porcentaje) || 10 }).select('*').single()
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json({ cupon: data })
+}
