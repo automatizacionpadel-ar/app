@@ -20,6 +20,12 @@ const nextConfig = {
           { key: 'Content-Type', value: 'application/manifest+json' },
         ],
       },
+      {
+        source: '/manifest/:slug',
+        headers: [
+          { key: 'Content-Type', value: 'application/manifest+json' },
+        ],
+      },
     ]
   },
 }

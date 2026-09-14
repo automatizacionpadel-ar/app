@@ -8,34 +8,67 @@ export default async function MensajeriaPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: negocio } = await supabase
-    .from('negocios')
-    .select('id')
+  // Resolver negocio via membresía (compatible legacy)
+  let negocioId: string | null = null
+
+  const { data: miembro } = await supabase
+    .from('negocio_miembros')
+    .select('negocio_id')
     .eq('usuario_id', user.id)
-    .single()
+    .maybeSingle()
 
-  if (!negocio) redirect('/dashboard')
+  if ((miembro as any)?.negocio_id) {
+    negocioId = (miembro as any).negocio_id
+  } else {
+    const { data: negocio } = await supabase.from('negocios').select('id').eq('usuario_id', user.id).maybeSingle()
+    negocioId = (negocio as any)?.id ?? null
+  }
 
-  // Conversations: latest message per chat_id, joined with cliente
-  const { data: conversaciones } = await supabase
-    .from('mensajes')
+  if (!negocioId) redirect('/dashboard')
+
+  // Intentar leer conversaciones (nueva tabla); fallback a mensajes dedup
+  let conversaciones: any[] = []
+
+  const { data: convs, error: convErr } = await supabase
+    .from('conversaciones')
     .select(`
       chat_id,
-      content,
-      role,
-      created_at,
+      last_message_preview,
+      estado,
+      unread_count,
+      last_message_at,
       cliente_id,
       clientes ( id, nombre, apellido, celular )
     `)
-    .eq('negocio_id', negocio.id)
-    .order('created_at', { ascending: false })
+    .eq('negocio_id', negocioId)
+    .order('last_message_at', { ascending: false })
+    .limit(100)
 
-  // Deduplicate to one row per chat_id (most recent message)
-  const vistas = new Map<string, typeof conversaciones>()
-  for (const msg of conversaciones ?? []) {
-    if (!vistas.has(msg.chat_id)) vistas.set(msg.chat_id, msg as any)
+  if (!convErr && convs && convs.length > 0) {
+    conversaciones = convs.map((c: any) => ({
+      chat_id: c.chat_id,
+      content: c.last_message_preview ?? '',
+      role: 'user' as const,
+      created_at: c.last_message_at,
+      cliente_id: c.cliente_id,
+      clientes: c.clientes,
+      estado: c.estado,
+      unread_count: c.unread_count,
+    }))
+  } else {
+    const { data: msgs } = await supabase
+      .from('mensajes')
+      .select(`chat_id, content, role, created_at, cliente_id, clientes ( id, nombre, apellido, celular )`)
+      .eq('negocio_id', negocioId)
+      .order('created_at', { ascending: false })
+      .limit(500)
+
+    const vistas = new Map<string, any>()
+    for (const msg of msgs ?? []) {
+      if (!vistas.has((msg as any).chat_id)) vistas.set((msg as any).chat_id, msg as any)
+    }
+    conversaciones = Array.from(vistas.values())
   }
-  const convs = Array.from(vistas.values())
 
-  return <MensajeriaCliente negocioId={negocio.id} conversaciones={convs as any} />
+  return <MensajeriaCliente negocioId={negocioId} conversaciones={conversaciones as any} />
 }

@@ -1,6 +1,6 @@
 // src/app/api/negocios/publico/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { createAdminClient } from '@/lib/supabase/server'
+import { getTenantBySlug } from '@/lib/tenant'
 
 export const dynamic = 'force-dynamic'
 
@@ -9,44 +9,23 @@ export async function GET(req: NextRequest) {
     const slug = req.nextUrl.searchParams.get('slug')
     if (!slug) return NextResponse.json({ error: 'Slug requerido' }, { status: 400 })
 
-    const supabase = createAdminClient()
-
-    const { data: negocio } = await supabase
-      .from('negocios')
-      .select(`
-        id,
-        slug,
-        nombre,
-        rubro,
-        direccion,
-        telefono,
-        logo_url,
-        color_marca,
-        activo,
-        negocio_agente_config (
-          mensaje_bienvenida
-        )
-      `)
-      .eq('slug', slug)
-      .eq('activo', true)
-      .single()
-
-    if (!negocio) {
-      return NextResponse.json({ error: 'Negocio no encontrado' }, { status: 404 })
-    }
-
-    const config = (negocio.negocio_agente_config as any[])?.[0]
+    const tenant = await getTenantBySlug(slug)
+    if (!tenant) return NextResponse.json({ error: 'Negocio no encontrado' }, { status: 404 })
 
     return NextResponse.json({
-      id:                 negocio.id,
-      slug:               negocio.slug,
-      nombre:             negocio.nombre,
-      rubro:              negocio.rubro,
-      direccion:          negocio.direccion,
-      telefono:           negocio.telefono,
-      logo_url:           negocio.logo_url    ?? null,
-      color_marca:        negocio.color_marca ?? '#7AB619',
-      mensaje_bienvenida: config?.mensaje_bienvenida ?? null,
+      id: tenant.id,
+      slug: tenant.slug,
+      nombre: tenant.nombre,
+      rubro: tenant.rubro,
+      descripcion: tenant.descripcion,
+      direccion: tenant.direccion,
+      telefono: tenant.telefono,
+      logo_url: tenant.logo_url ?? null,
+      imagen_portada_url: tenant.imagen_portada_url ?? null,
+      color_marca: tenant.color_marca ?? '#7AB619',
+      color_secundario: tenant.color_secundario ?? null,
+      texto_bienvenida: tenant.texto_bienvenida ?? null,
+      mensaje_bienvenida: tenant.mensaje_bienvenida ?? null,
     })
   } catch (error) {
     console.error('Error en /api/negocios/publico:', error)

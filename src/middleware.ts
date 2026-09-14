@@ -24,9 +24,16 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  const isAuthRoute     = request.nextUrl.pathname.startsWith('/login')
-  const isDashboardRoute = request.nextUrl.pathname.startsWith('/dashboard')
-  const isAdminRoute    = request.nextUrl.pathname.startsWith('/admin')
+  const pathname = request.nextUrl.pathname
+  const isAuthRoute      = pathname.startsWith('/login')
+  const isDashboardRoute = pathname.startsWith('/dashboard')
+  const isAdminRoute     = pathname.startsWith('/admin')
+  const isPublicTenant   = pathname.startsWith('/c/')
+
+  // Rutas públicas del tenant no requieren auth
+  if (isPublicTenant) {
+    return supabaseResponse
+  }
 
   // Si no está logueado y quiere entrar al dashboard/admin → redirigir a login
   if (!user && (isDashboardRoute || isAdminRoute)) {
@@ -48,5 +55,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/admin/:path*', '/login'],
+  matcher: ['/dashboard/:path*', '/admin/:path*', '/login', '/c/:path*'],
 }
